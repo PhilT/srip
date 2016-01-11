@@ -1,0 +1,23 @@
+#!/bin/env bash
+
+name=$1; shift
+season=$1; shift
+
+if [[ $name == '' || $season == '' ]]; then
+  echo rip_tv <name> <season_number>
+  exit 1
+fi
+
+
+echo rip_movie $name tv $season $title
+
+if [[ $? == 0 ]]; then
+  if [[ $title == 'all' ]]; then
+    .rb
+    # check existing season folder
+    # move
+  fi
+else
+  echo Problem
+fi
+

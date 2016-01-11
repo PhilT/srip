@@ -1,20 +1,5 @@
 #!/bin/env bash
 
-# rip_movie
-# Rips first title that is 60 minutes or longer, removes non-english audio tracks
-#   unless the main track (e.g. Chinese movies) or tracks that are mono or stereo
-#   when a multichannel track exists, selects 3D tracks and English subtitles
-#
-# Renames the ripped title, moves it to appropriate folder and sets permissions
-#   for Plex
-
-
-# Default selection added in MakeMKV GUI
-# Preferences->General, tick Expert Mode, Advanced->Default selection rule:
-#   -sel:all,+sel:audio&(eng|core|havecore),-sel:(havemulti),+sel:mvcvideo,+sel:subtitle&(eng),-sel:special,=100:all,-10:eng
-#
-
-
 name="$1"; shift
 year=$1; shift
 title=$1; shift
@@ -31,6 +16,8 @@ destination=/media
 minlength=3600
 [[ $year == 'tv' ]] && season_number=$title && title=all && minlength=1800
 
+mkdir -p $destination/discinfo
+makemkvcon --messages="$destination/discinfo/$name ($year).txt" --robot info disc:0
 makemkvcon --minlength=$minlength mkv disc:0 $title $destination
 
 if [[ $? == 0 ]]; then

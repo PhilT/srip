@@ -1,0 +1,49 @@
+#!/bin/env ruby
+
+require 'fileutils'
+require 'yaml'
+require './lib/disc'
+require './lib/ripper'
+require './lib/options'
+require './lib/rules'
+require './lib/library'
+
+trap('SIGINT') { puts 'Aborting...'; exit 2 }
+
+options = Options.new.parse
+puts 'Getting disc info...'
+output = Ripper.new.info
+info = Disc.info(output)
+File.write('discinfo/' + info[:name] + '.txt', output)
+File.write('discinfo/' + info[:name] + '.yaml', info.to_yaml)
+info = Rules.new.apply(info)
+
+puts "#{info[:type]}: #{info[:name]}"
+if info[:season]
+  puts "Season #{info[:season]}"
+  count = info[:titles].size
+  puts "#{count} #{'episode'.pluralize(count)}"
+  options[:titles] = info[:titles]
+  options[:library] = File.join(options[:library], 'TV Shows')
+else
+  options[:titles] = [info[:titles].first]
+  options[:library] = File.join(options[:library], 'Movies')
+  if options[:year]
+    puts "YEAR: #{options[:year]}"
+  else
+    puts 'Enter release year'
+    options[:year] = gets
+  end
+end
+
+exit 0 if options[:norip]
+
+unless options[:silent]
+  puts 'Press ENTER to start rip or CTRL+C to abort'
+  gets
+end
+
+Library.new.file(options)
+
+`eject`
+

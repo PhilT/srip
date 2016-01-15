@@ -1,5 +1,5 @@
+require './immutable'
 require 'csv'
-require 'active_support/core_ext/string/inflections'
 
 module Disc
   # Attribute IDs
@@ -43,33 +43,41 @@ module Disc
           end
         elsif id == NAME
           name, season = value.split('SEASON')
-          info[:name] = name.titleize
+          info[:name] = titleize(name)
           info[:season] = season.to_i if season
         end
       elsif type == 'TINFO'
         info[:titles][id][:id] = id
-        code = code.to_i
-        value = row[3]
-        if code == CHAPTERS
-          info[:titles][id][:chapters] = value.to_i
-        elsif code == DURATION
-          info[:titles][id][:duration] = to_seconds(value)
-        elsif code == SIZE_IN_BYTES
-          info[:titles][id][:size_in_bytes] = value.to_i
-        elsif code == TITLE_ID
-          info[:titles][id][:title_id] = value.to_i
-        elsif code == SEGMENT_COUNT
-          info[:titles][id][:segment_count] = value.to_i
-        elsif code == SEGMENT_MAP
-          info[:titles][id][:segment_map] = value
-        elsif code == FILENAME
-          info[:titles][id][:filename] = value
-        elsif code == ORDER
-          info[:titles][id][:order] = value.to_i
-        end
+        title_info(info, code.to_i, id, row[3])
       end
     end
     info
+  end
+
+  add_to_title = lambda do |fn, info, key, id, value|
+    info[:titles][id][key] = send(fn, value)
+  end
+
+  add_int_to_title = add_to_title.curry.(Integer)
+
+  add_duration_to_title = add_to_title.curry.(:to_seconds)
+
+  def title_info(info, code, id, value)
+
+    {
+      CHAPTERS => :add_int_to_title,
+      DURATION => :add_duration_to_title,
+      SIZE_IN_BYTES => :add_int_to_title,
+      TITLE_ID => :add_int_to_title,
+      SEGMENT_COUNT => :add_int_to_title,
+      SEGMENT_MAP => :add_to_title,
+      FILENAME => :add_to_title,
+      ORDER => :add_int_to_title
+    }[code].(info, code, id, value)
+  end
+
+  def titleize(str)
+    str.split('_').map {|part| part[0..0].upcase + part[1..-1].downcase }.join(' ')
   end
 
   def to_seconds(time)
@@ -81,4 +89,3 @@ module Disc
       reduce(&:+)
   end
 end
-

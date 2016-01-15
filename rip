@@ -1,7 +1,12 @@
 #!/bin/env ruby
 
+require 'bundler/setup'
+
+Bundler.require(:default)
+
 require 'fileutils'
 require 'yaml'
+
 require './lib/disc'
 require './lib/ripper'
 require './lib/options'
@@ -55,4 +60,3 @@ titles.each do |title|
 end
 
 `eject`
-

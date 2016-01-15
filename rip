@@ -13,7 +13,7 @@ trap('SIGINT') { puts 'Aborting...'; exit 2 }
 options = Options.new.parse
 puts 'Getting disc info...'
 output = Ripper.new.info
-info = Disc.info(output)
+info = info.merge(Disc.info(output))
 File.write('discinfo/' + info[:name] + '.txt', output)
 File.write('discinfo/' + info[:name] + '.yaml', info.to_yaml)
 info = Rules.new.apply(info)
@@ -23,27 +23,36 @@ if info[:season]
   puts "Season #{info[:season]}"
   count = info[:titles].size
   puts "#{count} #{'episode'.pluralize(count)}"
-  options[:titles] = info[:titles]
-  options[:library] = File.join(options[:library], 'TV Shows')
+  titles = info[:titles]
+  info[:library] = File.join(info[:library], 'TV Shows')
 else
-  options[:titles] = [info[:titles].first]
-  options[:library] = File.join(options[:library], 'Movies')
-  if options[:year]
-    puts "YEAR: #{options[:year]}"
+  titles = [info[:titles].first]
+  info[:library] = File.join(info[:library], 'Movies')
+  if info[:year]
+    puts "YEAR: #{info[:year]}"
   else
     puts 'Enter release year'
-    options[:year] = gets
+    info[:year] = gets
   end
 end
 
-exit 0 if options[:norip]
+exit 0 if info[:norip]
 
-unless options[:silent]
+unless info[:silent]
   puts 'Press ENTER to start rip or CTRL+C to abort'
   gets
 end
 
-Library.new.file(options)
+titles.each do |title|
+  Ripper.new.rip(info[:tempdir], title[:id])
+  filesize = File.size(title[:filename])
+  if filesize != title[:size_in_bytes]
+    raise RipError, "#{title[:filename]} file size of #{filesize} ' +
+      'does not match disc size of #{title[:size_in_bytes]}"
+  end
+
+  Library.new.add(options, title)
+end
 
 `eject`
 

@@ -1,6 +1,4 @@
-module Store
-  module_function
-
+class Store
   def files_in_dir(pattern)
     Dir[pattern]
   end

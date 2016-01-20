@@ -1,9 +1,18 @@
 require 'minitest/autorun'
 require './lib/library'
+require 'fakefs/safe'
 
 class LibraryTest < Minitest::Test
+  def setup
+    FakeFS.activate!
+  end
+
+  def teardown
+    FakeFS.deactivate!
+  end
+
   def info
-    {
+    @info ||= {
       tempdir: '/media',
       library: '/media/Owned',
       name: 'Series',
@@ -17,23 +26,35 @@ class LibraryTest < Minitest::Test
     }
   end
 
-  def store
-    @store ||= Minitest::Mock.new
-  end
-
   def subject
-    Library.new(info, title, store)
+    Library.new(info, title)
   end
 
   def test_add
-    store.expect :files_in_dir, ['Series - s1e01.mkv'], ['/media/Owned/Series/Season 1/*.mkv']
-    store.expect :move, nil, ['/media/title0.mkv', '/media/Owned/Series/Season 1/Series - s1e02.mkv']
+    FileUtils.mkdir_p '/media/Owned/Series/Season 1'
+    FileUtils.touch '/media/Owned/Series/Season 1/Series - s1e01.mkv'
+    FileUtils.touch '/media/title0.mkv'
+
     subject.add
-    store.verify
+
+    assert File.exists?('/media/Owned/Series/Season 1/Series - s1e02.mkv')
+    assert !File.exists?('/media/title0.mkv')
   end
 
-  def test_last_episode
+  def test_path_returns_movie_path
+    @info = info.merge(name: 'Movie', season: nil, year: '1990')
+    assert_equal '/media/Owned/Movie (1990).mkv', subject.path
+  end
+
+  def test_path_returns_tv_show_path
+
+  end
+
+  def test_last_episode_low_season_and_episode
     assert_equal 3, subject.last_episode(['Series Name - s1e03.mkv', 'Series Name - s1e02.mkv'])
+  end
+
+  def test_last_episode_high_season_and_episode
     assert_equal 11, subject.last_episode(['Series Name - s10e10.mkv', 'Series Name - s10e11.mkv'])
   end
 end

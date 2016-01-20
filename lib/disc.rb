@@ -1,7 +1,11 @@
-require './immutable'
 require 'csv'
+require './lib/string_util'
+require './lib/immutable'
 
-module Disc
+class Disc
+  extend Immutable
+  include StringUtil
+
   # Attribute IDs
   TYPE = 1
   NAME = 2
@@ -19,8 +23,6 @@ module Disc
   HDDVD = 6212
   MKV = 6213
 
-  module_function
-
   def info(data)
     info = {}
 
@@ -34,13 +36,7 @@ module Disc
         info[:titles] = Array.new(id) { {} }
       elsif type == 'CINFO'
         if id == TYPE
-          if code == DVD
-            info[:type] = 'DVD'
-          elsif code == BLURAY
-            info[:type] = 'BLURAY'
-          else
-            raise "Unknown disc type: #{code}"
-          end
+          add_disc_field(info, code)
         elsif id == NAME
           name, season = value.split('SEASON')
           info[:name] = titleize(name)
@@ -48,36 +44,43 @@ module Disc
         end
       elsif type == 'TINFO'
         info[:titles][id][:id] = id
-        title_info(info, code.to_i, id, row[3])
+        add_title_field(info, code.to_i, id, row[3])
       end
     end
     info
   end
 
-  add_to_title = lambda do |fn, info, key, id, value|
-    info[:titles][id][key] = send(fn, value)
+  def add_disc_field(info, code)
+    info[:type] = INFO_MAP[code]
   end
 
-  add_int_to_title = add_to_title.curry.(Integer)
-
-  add_duration_to_title = add_to_title.curry.(:to_seconds)
-
-  def title_info(info, code, id, value)
-
-    {
-      CHAPTERS => :add_int_to_title,
-      DURATION => :add_duration_to_title,
-      SIZE_IN_BYTES => :add_int_to_title,
-      TITLE_ID => :add_int_to_title,
-      SEGMENT_COUNT => :add_int_to_title,
-      SEGMENT_MAP => :add_to_title,
-      FILENAME => :add_to_title,
-      ORDER => :add_int_to_title
-    }[code].(info, code, id, value)
+  def add_title_field(info, code, id, value)
+    details = INFO_MAP[code]
+    info[:titles][id][details[1]] = send(details[0], value) if details
   end
 
-  def titleize(str)
-    str.split('_').map {|part| part[0..0].upcase + part[1..-1].downcase }.join(' ')
+  INFO_MAP = {
+    DVD => 'DVD',
+    BLURAY => 'BLURAY',
+    HDDVD => 'HDDVD',
+    MKV => 'MKV',
+    NAME => [:noop, :name],
+    CHAPTERS => [:to_i, :chapters],
+    DURATION => [:to_seconds, :duration],
+    SIZE_IN_BYTES => [:to_i, :size_in_bytes],
+    TITLE_ID => [:to_i, :title_id],
+    SEGMENT_COUNT => [:to_i, :segment_count],
+    SEGMENT_MAP => [:noop, :segment_map],
+    FILENAME => [:noop, :filename],
+    ORDER => [:to_i, :order]
+  }
+
+  def noop(value)
+    value
+  end
+
+  def to_i(value)
+    value.to_i
   end
 
   def to_seconds(time)
@@ -89,3 +92,4 @@ module Disc
       reduce(&:+)
   end
 end
+

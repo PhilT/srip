@@ -1,17 +1,16 @@
+require 'fileutils'
 require './lib/immutable'
 
 class Library
-  include Immutable
-  class RipError; end
+  extend Immutable
 
-  def initialize(info, title, store)
+  def initialize(info, title)
     @info = info
     @title = title
-    @store = store
   end
 
   def add
-    @store::move File.join(@info[:tempdir], @title[:filename]), path
+    FileUtils.mv File.join(@info[:tempdir], @title[:filename]), path
   end
 
   def path
@@ -20,14 +19,14 @@ class Library
 
   def episode_path
     season_dir = File.join(@info[:library], @info[:name], "Season #{@info[:season]}")
-    files_in_season = @store::files_in_dir(File.join(season_dir, '/*.mkv'))
+    files_in_season = Dir[File.join(season_dir, '/*.mkv')]
     episode = last_episode(files_in_season) + 1
     name = "#{@info[:name]} - s#{@info[:season]}e#{'%02d' % episode}.mkv"
     File.join(season_dir, name)
   end
 
   def movie_path
-    File.join(@info[:library], "#{@info[:name]} (#{@info[:year]})")
+    File.join(@info[:library], "#{@info[:name]} (#{@info[:year]}).mkv")
   end
 
   def last_episode(files)

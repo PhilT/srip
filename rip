@@ -14,20 +14,27 @@ require './lib/rules'
 require './lib/library'
 
 trap('SIGINT') { puts 'Aborting...'; exit 2 }
+class RipError; end
 
 options = Options.new.parse
 puts 'Getting disc info...'
 output = Ripper.new.info
-info = info.merge(Disc.info(output))
-File.write('discinfo/' + info[:name] + '.txt', output)
-File.write('discinfo/' + info[:name] + '.yaml', info.to_yaml)
+if output.nil?
+  puts "Problem reading disc. Check it's inserted correctly"
+  exit 1
+end
+info = options.merge(Disc.new.info(output))
+#TODO: use season and episode if available
+File.write('test/discinfo/' + (info[:name] || "title_#{Time.now.strftime('%y%m%d_%H%M')}") + '.txt', output)
+File.write('test/discinfo/' + info[:name] + '.yaml', info.to_yaml)
+puts 'Done. Applying rules...'
 info = Rules.new.apply(info)
 
 puts "#{info[:type]}: #{info[:name]}"
 if info[:season]
   puts "Season #{info[:season]}"
   count = info[:titles].size
-  puts "#{count} #{'episode'.pluralize(count)}"
+  puts "#{count} episode(s)"
   titles = info[:titles]
   info[:library] = File.join(info[:library], 'TV Shows')
 else
@@ -60,3 +67,4 @@ titles.each do |title|
 end
 
 `eject`
+

@@ -13,7 +13,14 @@ class Ripper
   private
 
   def call(command, *options)
-    cmdline = "makemkvcon --robot --minlength=1800 #{command} disc:0 #{options.join(' ')}"
+    cmdline = ([
+      'makemkvcon',
+      '--robot',
+      '--minlength=1800',
+      command,
+      'disc:0'
+    ] + options).join(' ')
+
     cmdline + "\n" + `#{cmdline}`
   end
 end

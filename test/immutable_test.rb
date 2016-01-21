@@ -1,5 +1,4 @@
-require 'minitest/autorun'
-require './lib/immutable'
+require './test/test_helper'
 
 class ImmutableClass
   extend Immutable
@@ -12,3 +11,4 @@ class ImmutableTest < Minitest::Test
     assert_raises { subject.immutable_var = 'something' }
   end
 end
+

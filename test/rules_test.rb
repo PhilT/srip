@@ -1,5 +1,4 @@
-require 'minitest/autorun'
-require './lib/rules'
+require './test/test_helper'
 
 class RulesTest < Minitest::Test
   def test_discard_playlist_titles

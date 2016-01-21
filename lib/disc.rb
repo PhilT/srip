@@ -23,42 +23,6 @@ class Disc
   HDDVD = 6212
   MKV = 6213
 
-  def info(data)
-    info = {}
-
-    CSV.parse(data) do |row|
-      type, id = row[0].split(':')
-      id = id.to_i
-      code = row[1].to_i
-      value = row[2]
-
-      if type == 'TCOUNT'
-        info[:titles] = Array.new(id) { {} }
-      elsif type == 'CINFO'
-        if id == TYPE
-          add_disc_field(info, code)
-        elsif id == NAME
-          name, season = value.split('SEASON')
-          info[:name] = titleize(name)
-          info[:season] = season.to_i if season
-        end
-      elsif type == 'TINFO'
-        info[:titles][id][:id] = id
-        add_title_field(info, code.to_i, id, row[3])
-      end
-    end
-    info
-  end
-
-  def add_disc_field(info, code)
-    info[:type] = INFO_MAP[code]
-  end
-
-  def add_title_field(info, code, id, value)
-    details = INFO_MAP[code]
-    info[:titles][id][details[1]] = send(details[0], value) if details
-  end
-
   INFO_MAP = {
     DVD => 'DVD',
     BLURAY => 'BLURAY',
@@ -74,6 +38,54 @@ class Disc
     FILENAME => [:noop, :filename],
     ORDER => [:to_i, :order]
   }
+
+  TV_SHOWS = [
+    'Battlestar Galactica',
+    'Game Of Thrones'
+  ]
+
+  def lookup_name(name)
+    tv_show = TV_SHOWS.find { |show| /#{show}/ =~ name }
+    if tv_show
+      [tv_show, 'TV']
+    else
+      [name, 'MOVIE']
+    end
+  end
+
+  def info(data)
+    info = {}
+
+    CSV.parse(data) do |row|
+      type, id = row[0].split(':')
+      id = id.to_i
+      code = row[1].to_i
+      value = row[2]
+
+      if type == 'TCOUNT'
+        info[:titles] = Array.new(id) { {} }
+      elsif type == 'CINFO'
+        if id == TYPE
+          add_disc_field(info, code)
+        elsif id == NAME
+          info[:name], info[:type] = lookup_name(titleize(value))
+        end
+      elsif type == 'TINFO'
+        info[:titles][id][:id] = id
+        add_title_field(info, code.to_i, id, row[3])
+      end
+    end
+    info
+  end
+
+  def add_disc_field(info, code)
+    info[:format] = INFO_MAP[code]
+  end
+
+  def add_title_field(info, code, id, value)
+    details = INFO_MAP[code]
+    info[:titles][id][details[1]] = send(details[0], value) if details
+  end
 
   def noop(value)
     value

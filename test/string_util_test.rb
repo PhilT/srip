@@ -1,5 +1,4 @@
-require 'minitest/autorun'
-require './lib/string_util'
+require './test/test_helper'
 
 class StringUtilTest < Minitest::Test
   include StringUtil

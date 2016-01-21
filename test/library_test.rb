@@ -1,6 +1,4 @@
-require 'minitest/autorun'
-require './lib/library'
-require 'fakefs/safe'
+require './test/test_helper'
 
 class LibraryTest < Minitest::Test
   def setup

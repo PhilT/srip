@@ -1,6 +1,4 @@
-require 'minitest/autorun'
-require './lib/disc'
-require './lib/string_util'
+require './test/test_helper'
 
 class DiscTest < Minitest::Test
   include StringUtil
@@ -43,11 +41,20 @@ class DiscTest < Minitest::Test
     EOS
   end
 
+  def test_lookup_name_returns_movies
+    assert_equal ['Movie Name', 'MOVIE'], subject.lookup_name('Movie Name')
+  end
+
+  def test_lookup_name_returns_tv_show
+    assert_equal ['Battlestar Galactica', 'TV'], subject.lookup_name('Battlestar Galactica Season 1')
+  end
+
   def test_titles_are_added_to_info
     info = subject.info(header + first_title + second_title)
     expected = {
       name: 'Movie Name',
-      type: 'BLURAY',
+      format: 'BLURAY',
+      type: 'MOVIE',
       titles: [{
         id: 0,
         name: 'Movie Name',

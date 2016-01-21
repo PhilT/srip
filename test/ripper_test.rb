@@ -1,6 +1,4 @@
-require 'minitest/autorun'
-require 'fakefs/safe'
-require './lib/ripper'
+require './test/test_helper'
 
 class Ripper
   def `(*args)

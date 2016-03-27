@@ -3,7 +3,7 @@
 ## Description
 
 A collection of Bash and Ruby scripts to try to automate the process
-of ripping Bluray and DVD movies and TV shows.
+of ripping 3D, Bluray and DVD movies and TV shows and preparing it for Plex.
 
 ### Rips Movies
 
@@ -36,8 +36,17 @@ as necessary.
 
 ## Usage
 
-## Development
+To run:
 
-I've attempted to apply some Functional Programming techniques to the code
-in the hope of making it easier to test and more deterministic.
+    ./rip [options]
 
+Anything that is required will be asked on the commandline
+unless supplied as an option.
+
+To see all available options:
+
+    ./rip --help
+
+Example. To rip a movie without any questions just supply the year it was released:
+
+    ./rip --year=2016

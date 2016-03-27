@@ -7,11 +7,9 @@ Bundler.require(:default)
 require 'fileutils'
 require 'yaml'
 
-require './lib/disc'
-require './lib/ripper'
-require './lib/options'
-require './lib/rules'
-require './lib/library'
+Dir['./lib/*.rb'].each do |file|
+  require file
+end
 
 trap('SIGINT') { puts 'Aborting...'; exit 2 }
 class RipError; end
@@ -24,6 +22,10 @@ if output.nil?
   exit 1
 end
 info = options.merge(Disc.new.info(output))
+if info[:name].nil?
+  puts 'Could not get disc info. Check you can open the disc in makemkv.'
+  exit 1
+end
 #TODO: use season and episode if available
 File.write('test/discinfo/' + (info[:name] || "title_#{Time.now.strftime('%y%m%d_%H%M')}") + '.txt', output)
 File.write('test/discinfo/' + info[:name] + '.yaml', info.to_yaml)
@@ -51,13 +53,14 @@ end
 exit 0 if info[:norip]
 
 unless info[:silent]
+  puts 'If the disc is not recognised as a TV Show, edit lib/disc.rb'
   puts 'Press ENTER to start rip or CTRL+C to abort'
   gets
 end
 
 titles.each do |title|
   Ripper.new.rip(info[:tempdir], title[:id])
-  filesize = File.size(title[:filename])
+  filesize = File.size(File.join(info[:tempdir], title[:filename]))
   if filesize != title[:size_in_bytes]
     raise RipError, "#{title[:filename]} file size of #{filesize} ' +
       'does not match disc size of #{title[:size_in_bytes]}"
@@ -67,4 +70,3 @@ titles.each do |title|
 end
 
 `eject`
-

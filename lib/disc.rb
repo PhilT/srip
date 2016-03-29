@@ -43,12 +43,12 @@ class Disc
     {
       id: 'BATTLESTAR_GALACTICA',
       name: 'Battlestar Galactica',
-      season: /_SEASON_(.+)/
+      season_matcher: /_SEASON_(.+)/
     },
     {
       id: 'GAME_OF_THRONES',
       name: 'Game of Thrones',
-      season: /_S(.+)_/
+      season_matcher: /_S(.+)_/
     }
   ]
 
@@ -56,6 +56,8 @@ class Disc
     show = TV_SHOWS.find { |s| /#{s[:id]}/ =~ name }
     if show
       show[:type] = 'TV'
+      matcher = show.delete(:season_matcher)
+      show[:season] = name.scan(matcher).flatten.last.to_i
       show
     else
       { id: name, name: titleize(name), type: 'MOVIE' }

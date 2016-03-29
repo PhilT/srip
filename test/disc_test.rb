@@ -46,10 +46,10 @@ class DiscTest < Minitest::Test
   end
 
   def test_lookup_name_returns_tv_show
-    bsg = {id: 'BATTLESTAR_GALACTICA', name: 'Battlestar Galactica', season: /_SEASON_(.+)/, type: 'TV'}
+    bsg = {id: 'BATTLESTAR_GALACTICA', name: 'Battlestar Galactica', season: 1, type: 'TV'}
     assert_equal bsg, subject.lookup_name('BATTLESTAR_GALACTICA_SEASON_1')
-    got = {id: 'GAME_OF_THRONES', name: 'Game of Thrones', season: /_S(.+)_/, type: 'TV'}
-    assert_equal got, subject.lookup_name('GAME_OF_THRONES_S1_DISC1')
+    got = {id: 'GAME_OF_THRONES', name: 'Game of Thrones', season: 2, type: 'TV'}
+    assert_equal got, subject.lookup_name('GAME_OF_THRONES_S2_DISC1')
   end
 
   def test_titles_are_added_to_info

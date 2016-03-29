@@ -29,5 +29,6 @@
   :segment_map: '129,130,131,132,133'
   :filename: Gravity_t02.mkv
   :order: 0
-:type: BLURAY
+:format: BLURAY
 :name: Gravity
+:type: MOVIE

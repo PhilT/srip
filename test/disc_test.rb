@@ -13,7 +13,7 @@ class DiscTest < Minitest::Test
     DRV:1,256,999,0,"","",""
     TCOUNT:2
     CINFO:1,6209,"Blu-ray"
-    CINFO:2,0,"Movie Name"
+    CINFO:2,0,"MOVIE_NAME"
     EOS
   end
 
@@ -42,19 +42,23 @@ class DiscTest < Minitest::Test
   end
 
   def test_lookup_name_returns_movies
-    assert_equal ['Movie Name', 'MOVIE'], subject.lookup_name('Movie Name')
+    assert_equal({id: 'MOVIE_NAME', name: 'Movie Name', type: 'MOVIE'}, subject.lookup_name('MOVIE_NAME'))
   end
 
   def test_lookup_name_returns_tv_show
-    assert_equal ['Battlestar Galactica', 'TV'], subject.lookup_name('Battlestar Galactica Season 1')
+    bsg = {id: 'BATTLESTAR_GALACTICA', name: 'Battlestar Galactica', season: /_SEASON_(.+)/, type: 'TV'}
+    assert_equal bsg, subject.lookup_name('BATTLESTAR_GALACTICA_SEASON_1')
+    got = {id: 'GAME_OF_THRONES', name: 'Game of Thrones', season: /_S(.+)_/, type: 'TV'}
+    assert_equal got, subject.lookup_name('GAME_OF_THRONES_S1_DISC1')
   end
 
   def test_titles_are_added_to_info
     info = subject.info(header + first_title + second_title)
     expected = {
+      id: 'MOVIE_NAME',
       name: 'Movie Name',
-      format: 'BLURAY',
       type: 'MOVIE',
+      format: 'BLURAY',
       titles: [{
         id: 0,
         name: 'Movie Name',
@@ -94,4 +98,3 @@ class DiscTest < Minitest::Test
     assert_equal 219599, subject.to_seconds('60:59:59')
   end
 end
-

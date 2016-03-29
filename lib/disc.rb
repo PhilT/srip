@@ -40,16 +40,25 @@ class Disc
   }
 
   TV_SHOWS = [
-    'Battlestar Galactica',
-    'Game Of Thrones'
+    {
+      id: 'BATTLESTAR_GALACTICA',
+      name: 'Battlestar Galactica',
+      season: /_SEASON_(.+)/
+    },
+    {
+      id: 'GAME_OF_THRONES',
+      name: 'Game of Thrones',
+      season: /_S(.+)_/
+    }
   ]
 
   def lookup_name(name)
-    tv_show = TV_SHOWS.find { |show| /#{show}/ =~ name }
-    if tv_show
-      [tv_show, 'TV']
+    show = TV_SHOWS.find { |s| /#{s[:id]}/ =~ name }
+    if show
+      show[:type] = 'TV'
+      show
     else
-      [name, 'MOVIE']
+      { id: name, name: titleize(name), type: 'MOVIE' }
     end
   end
 
@@ -68,7 +77,7 @@ class Disc
         if id == TYPE
           add_disc_field(info, code)
         elsif id == NAME
-          info[:name], info[:type] = lookup_name(titleize(value))
+          info.merge!(lookup_name(value))
         end
       elsif type == 'TINFO'
         info[:titles][id][:id] = id
@@ -104,4 +113,3 @@ class Disc
       reduce(&:+)
   end
 end
-

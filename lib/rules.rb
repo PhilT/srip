@@ -1,27 +1,24 @@
 class Rules
-
   def apply(info)
     info = discard_single_chapter_titles(info)
-    discard_playlist_titles(info)
+    info[:season] ? discard_playlist_titles(info) : info
   end
 
   private
 
   def discard_single_chapter_titles(info)
-    info[:titles].reject! do |title|
-      title[:chapters] == 1
+    info.dup.tap do |i|
+      i[:titles].reject! do |title|
+        title[:chapters] == 1
+      end
     end
-    info
   end
 
   def discard_playlist_titles(info)
-    if info[:season]
-      #FIXME: reject! is mutable
-      info[:titles].reject! do | title|
+    info.dup.tap do |i|
+      i[:titles].reject! do | title|
         title[:segment_map].match(',') && title[:segment_map].match('-')
       end
     end
-    info
   end
 end
-

@@ -10,5 +10,6 @@ task :watch do
     system 'rake'
   end
   listener.start # not blocking
+  puts 'Waiting for changes'
   sleep
 end

@@ -22,15 +22,14 @@ if output.nil?
   exit 1
 end
 info = options.merge(Disc.new.info(output))
-if info[:name].nil?
+if info[:id].nil?
   puts 'Could not get disc info. Check you can open the disc in makemkv.'
   exit 1
 end
-#TODO: use season and episode if available
-File.write('test/discinfo/' + (info[:name] || "title_#{Time.now.strftime('%y%m%d_%H%M')}") + '.txt', output)
-File.write('test/discinfo/' + info[:name] + '.yaml', info.to_yaml)
+File.write('test/discinfo/' + info[:id] + '.txt', output)
 puts 'Done. Applying rules...'
 info = Rules.new.apply(info)
+File.write('test/discinfo/' + info[:id] + '.yml', info.to_yaml)
 
 puts "#{info[:type]}: #{info[:name]}"
 if info[:season]

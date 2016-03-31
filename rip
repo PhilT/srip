@@ -53,19 +53,14 @@ exit 0 if info[:norip]
 
 unless info[:silent]
   puts 'If the disc is not recognised as a TV Show, edit lib/disc.rb'
-  puts 'Press ENTER to start rip or CTRL+C to abort'
+  print 'Press ENTER to start rip or CTRL+C to abort'
   gets
+  puts "Ripping #{titles.size} title(s)..."
 end
 
 titles.each do |title|
   Ripper.new.rip(info[:tempdir], title[:id])
-  filesize = File.size(File.join(info[:tempdir], title[:filename]))
-  if filesize != title[:size_in_bytes]
-    raise RipError, "#{title[:filename]} file size of #{filesize} ' +
-      'does not match disc size of #{title[:size_in_bytes]}"
-  end
-
-  Library.new.add(options, title)
+  Library.new(info, title).add
 end
 
 `eject`

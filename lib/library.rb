@@ -10,7 +10,11 @@ class Library
   end
 
   def add
+    FileUtils.mkdir_p File.dirname(path)
+#    FileUtils.chown_R 'plex', 'plex', File.dirname(path)
     FileUtils.mv File.join(@info[:tempdir], @title[:filename]), path
+#    FileUtils.chown 'plex', 'plex', path
+    check_filesize
   end
 
   def path
@@ -34,5 +38,13 @@ class Library
       file.match(/\w - s.*?e(.*?)\.mkv/)[1].to_i
     end.sort.last.to_i
   end
-end
 
+  private
+
+  def check_filesize
+    filesize = File.size(path)
+    if filesize < (1024 * 1024 * 1024)
+      puts "WARNING: #{path} is less an 1GB"
+    end
+  end
+end

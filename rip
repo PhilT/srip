@@ -16,12 +16,13 @@ class RipError; end
 
 options = Options.new.parse
 puts 'Getting disc info...'
-output = Ripper.new.info
+output = Ripper.new.info(options[:tempdir])
 if output.nil?
   puts "Problem reading disc. Check it's inserted correctly"
   exit 1
 end
 info = options.merge(Disc.new.info(output))
+
 if info[:id].nil?
   puts 'Could not get disc info. Check you can open the disc in makemkv.'
   exit 1
@@ -55,11 +56,11 @@ unless info[:silent]
   puts 'If the disc is not recognised as a TV Show, edit lib/disc.rb'
   print 'Press ENTER to start rip or CTRL+C to abort'
   gets
-  puts "Ripping #{titles.size} title(s)..."
 end
 
 titles.each do |title|
-  Ripper.new.rip(info[:tempdir], title[:id])
+  puts "Ripping #{title[:id]}..."
+  Ripper.new.rip(info[:tempdir], title[:id], info[:minlength])
   Library.new(info, title).add
 end
 

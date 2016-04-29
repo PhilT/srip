@@ -9,7 +9,7 @@ end
 class RipperTest < Minitest::Test
   def test_info_call_makemkv_with_info_command
     cmd = 'makemkvcon --robot --minlength=1800 info disc:0'
-    assert_equal "#{cmd}\nEXEC #{cmd}", Ripper.new.info
+    assert_equal "#{cmd}\nEXEC #{cmd}", Ripper.new.info('tempdir')
   end
 
   def test_rip_calls_makemkv_with_mkv_command
@@ -23,4 +23,3 @@ class RipperTest < Minitest::Test
     assert_equal "#{cmd}\nEXEC #{cmd}\n", log_file
   end
 end
-

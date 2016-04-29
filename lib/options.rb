@@ -24,6 +24,10 @@ class Options
         @options[:year] = value
       end
 
+      opts.on('--minlength=LENGTH', 'Igore titles less than this length (default: 30 (minutes))') do |value|
+        @options[:minlength] = value * 60 || 1800
+      end
+
       opts.on('--silent', 'Do not confirm before starting rip') do
         @options[:silent] = true
       end
@@ -41,4 +45,3 @@ class Options
     @options
   end
 end
-

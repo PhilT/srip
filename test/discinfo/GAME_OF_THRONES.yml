@@ -4,8 +4,8 @@
 :titles:
 - :id: 0
   :chapters: 9
-  :duration: 3541
-  :size_in_bytes: 3073921024
+  :duration: 3120
+  :size_in_bytes: 3310450688
   :title_id: 1
   :segment_count: 1
   :segment_map: 1-9
@@ -13,21 +13,12 @@
   :order: 0
 - :id: 1
   :chapters: 9
-  :duration: 3179
-  :size_in_bytes: 2759649280
+  :duration: 3023
+  :size_in_bytes: 3269924864
   :title_id: 2
   :segment_count: 1
   :segment_map: 1-9
   :filename: title01.mkv
-  :order: 0
-- :id: 3
-  :chapters: 15
-  :duration: 1840
-  :size_in_bytes: 1137803264
-  :title_id: 14
-  :segment_count: 15
-  :segment_map: '1,2,3,4,5,6,7,8,9,10,11,12,13,14,15'
-  :filename: title03.mkv
   :order: 0
 :format: DVD
 :id: GAME_OF_THRONES

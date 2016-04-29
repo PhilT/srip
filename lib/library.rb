@@ -2,8 +2,6 @@ require 'fileutils'
 require './lib/immutable'
 
 class Library
-  extend Immutable
-
   def initialize(info, title)
     @info = info
     @title = title
@@ -18,7 +16,7 @@ class Library
   end
 
   def path
-    @info[:season] ? episode_path : movie_path
+    @path ||= @info[:season] ? episode_path : movie_path
   end
 
   def episode_path

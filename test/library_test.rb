@@ -1,5 +1,13 @@
 require './test/test_helper'
 
+class Library
+  attr_reader :messages
+  def puts str
+    @messages ||= []
+    @messages << str
+  end
+end
+
 class LibraryTest < Minitest::Test
   def setup
     FakeFS.activate!

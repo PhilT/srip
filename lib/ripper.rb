@@ -11,7 +11,7 @@ class Ripper
 
   def call(command, tempdir, id = nil, minlength = 1800)
     dest = tempdir if command == 'mkv'
-    cmdline = "makemkvcon --robot --minlength=#{minlength} #{command} disc:0 #{id} #{dest}"
+    cmdline = "makemkvcon --robot --minlength=#{minlength} #{command} disc:0 #{id} #{dest}".strip
     output = cmdline + "\n" + `#{cmdline}`
 
     File.open(File.join(tempdir, 'ripper.log'), 'a') do |f|

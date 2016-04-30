@@ -36,7 +36,7 @@ puts "#{info[:type]}: #{info[:name]}"
 if info[:season]
   puts "Season #{info[:season]}"
   count = info[:titles].size
-  puts "#{count} episode(s)"
+  puts "#{count} episode(s) #{info[:minlength] / 60} minutes or longer"
   titles = info[:titles]
   info[:library] = File.join(info[:library], 'TV Shows')
 else
@@ -59,7 +59,7 @@ unless info[:silent]
 end
 
 titles.each do |title|
-  puts "Ripping #{title[:id]}..."
+  puts "Ripping title #{title[:id]}..."
   Ripper.new.rip(info[:tempdir], title[:id], info[:minlength])
   Library.new(info, title).add
 end

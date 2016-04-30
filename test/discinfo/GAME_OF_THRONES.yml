@@ -1,6 +1,7 @@
 ---
 :tempdir: "/media"
 :library: "/media/Owned"
+:minlength: 2700
 :titles:
 - :id: 0
   :chapters: 9

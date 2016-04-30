@@ -7,4 +7,3 @@ Minitest::Reporters.use!
 
 require 'minitest/autorun'
 require 'fakefs/safe'
-

@@ -3,15 +3,15 @@ GEM
   specs:
     ansi (1.5.0)
     builder (3.2.2)
-    coderay (1.1.0)
-    fakefs (0.6.7)
+    coderay (1.1.1)
+    fakefs (0.8.1)
     ffi (1.9.10)
-    listen (3.0.6)
+    listen (3.1.1)
       rb-fsevent (>= 0.9.3)
       rb-inotify (>= 0.9.7)
     method_source (0.8.2)
-    minitest (5.8.3)
-    minitest-reporters (1.1.7)
+    minitest (5.8.4)
+    minitest-reporters (1.1.8)
       ansi
       builder
       minitest (>= 5.0)
@@ -20,11 +20,11 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
-    rake (10.4.2)
+    rake (11.1.2)
     rb-fsevent (0.9.7)
     rb-inotify (0.9.7)
       ffi (>= 0.5.0)
-    ruby-progressbar (1.7.5)
+    ruby-progressbar (1.8.0)
     slop (3.6.0)
 
 PLATFORMS

@@ -42,7 +42,7 @@ class Library
   def check_filesize
     filesize = File.size(path)
     if filesize < (1024 * 1024 * 1024)
-      puts "WARNING: #{path} is less an 1GB"
+      "WARNING: #{path} is less than 1GB"
     end
   end
 end

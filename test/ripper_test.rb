@@ -8,25 +8,32 @@ end
 
 class RipperTest < Minitest::Test
   def setup
-    FakeFS.activate!
+   FakeFS.activate!
+   FakeFS::FileSystem.clear
     FileUtils.mkdir_p('tempdir')
     FileUtils.rm('tempdir/ripper.log') if File.exists?('tempdir/ripper.log')
   end
 
-  def test_info_call_makemkv_with_info_command
-    info = Ripper.new.info('tempdir')
-
+  def teardown
     FakeFS.deactivate!
-    cmd = 'makemkvcon --robot --minlength=1800 info disc:0'
+  end
+
+  def assert_equal(expected, actual)
+    assert expected == actual, "Expected: #{expected}\n but was: #{actual}"
+  end
+
+  def test_info_call_makemkv_with_info_command
+    info = Ripper.new.info('tempdir', 3000)
+
+    cmd = 'makemkvcon --robot --minlength=3000 info disc:0'
     assert_equal "#{cmd}\nEXEC #{cmd}", info
   end
 
   def test_rip_calls_makemkv_with_mkv_command
-    Ripper.new.rip('tempdir', 'id', '3000')
+    Ripper.new.rip('tempdir', 'id', 3000)
 
     cmd = 'makemkvcon --robot --minlength=3000 mkv disc:0 id tempdir'
     log_file = File.read('tempdir/ripper.log')
-    FakeFS.deactivate!
     assert_equal "#{cmd}\nEXEC #{cmd}\n", log_file
   end
 end

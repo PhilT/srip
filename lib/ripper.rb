@@ -1,6 +1,6 @@
 class Ripper
-  def info(tempdir)
-    call('info', tempdir)
+  def info(tempdir, minlength)
+    call('info', tempdir, nil, minlength)
   end
 
   def rip(tempdir, id, minlength)

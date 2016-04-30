@@ -12,7 +12,7 @@ class RipError; end
 
 options = Options.new.parse
 puts 'Getting disc info...'
-output = Ripper.new.info(options[:tempdir])
+output = Ripper.new.info(options[:tempdir], options[:minlength])
 if output.nil?
   puts "Problem reading disc. Check it's inserted correctly"
   exit 1

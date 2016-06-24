@@ -10,6 +10,8 @@ end
 trap('SIGINT') { puts 'Aborting...'; exit 2 }
 class RipError; end
 
+FileUtils.rm File.join(options[:tempdir], '*.*')
+
 options = Options.new.parse
 puts 'Getting disc info...'
 output = Ripper.new.info(options[:tempdir], options[:minlength])

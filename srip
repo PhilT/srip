@@ -1,0 +1,10 @@
+#!/bin/env ruby
+
+require 'fileutils'
+require 'yaml'
+require 'sinatra'
+require 'slim'
+
+get '/' do
+  slim :index
+end

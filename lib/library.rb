@@ -8,10 +8,16 @@ class Library
   end
 
   def add
-    FileUtils.mkdir_p File.dirname(path)
-#    FileUtils.chown_R 'plex', 'plex', File.dirname(path)
-    FileUtils.mv File.join(@info[:tempdir], @title[:filename]), path
-#    FileUtils.chown 'plex', 'plex', path
+    dir = File.dirname(path)
+    unless Dir.exist?(dir)
+      `sudo mkdir -p "#{dir}"`
+      `sudo chown plex:plex "#{dir}"`
+    end
+
+    tempfile = File.join(@info[:tempdir], @title[:filename])
+    `sudo chown plex:plex "#{tempfile}"`
+    `sudo mv "#{tempfile}" "#{path}"`
+
     check_filesize
   end
 

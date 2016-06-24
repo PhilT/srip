@@ -3,8 +3,8 @@ require 'optparse'
 class Options
   def initialize
     @options = {
-      tempdir:'/media',
-      library: '/media/Rentals'
+      tempdir: '/media/tmp',
+      library: '/media/Rented'
     }
   end
 
@@ -16,7 +16,7 @@ class Options
         @options[:tempdir] = value
       end
 
-      opts.on('--library=DIR', 'Folder to move file(s) to once ripped (default: /media/Rentals)') do |value|
+      opts.on('--library=DIR', 'Folder to move file(s) to once ripped (default: /media/Rented)') do |value|
         @options[:library] = value
       end
 

@@ -14,6 +14,7 @@ class MainWindow < Gtk::Window
 
     @start = Gtk::Button.new('Start Rip')
     @start.signal_connect('clicked') do
+      @start.sensitive = false
       @state = nil
       @actions.clear_temp_folder
       @status.push(1, 'Getting disc info...')
@@ -34,6 +35,7 @@ class MainWindow < Gtk::Window
               @state != :ripped
             end
             Ripper.new.rip(Actions::TEMP_DIR, title[:id], Actions::MIN_LENGTH)
+            `eject`
             signal_emit('ripped', title[:filename])
           end
         end
@@ -112,12 +114,13 @@ class MainWindow < Gtk::Window
       quit if key == 'q' && e.state.control_mask?
     end
 
-    signal_connect('ripped') do |filename|
+    signal_connect('ripped') do |widget, filename|
       @status.push 1, "Completed rip of #{filename}"
       @state = :ripped
       if @add_to.text != ''
         @library.add
       end
+      @start.sensitive = true
     end
 
     show_all

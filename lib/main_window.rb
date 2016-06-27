@@ -1,5 +1,11 @@
-class Gui
-  def initialize
+class MainWindow < Gtk::Window
+  Thread::abort_on_exception = true
+  type_register
+  signal_new('ripped', GLib::Signal::RUN_FIRST, nil, nil, String)
+  def signal_do_ripped(filename)
+  end
+
+  def build
     @info = {}
     @actions = Actions.new
     @owned = Gtk::RadioButton.new('I own this disc')
@@ -8,22 +14,35 @@ class Gui
 
     @start = Gtk::Button.new('Start Rip')
     @start.signal_connect('clicked') do
+      @state = nil
       @actions.clear_temp_folder
-      @status.push(1, 'Getting disc info')
+      @status.push(1, 'Getting disc info...')
 
       @info_thread = Thread.new do
         @info = @actions.disc_info
-        @term.text = clean_title(@info[:name])
         if @info[:error]
           @status.push(1, @info[:error])
         else
+          @info = @actions.apply_rules(@info)
+          @term.text = clean_title(@info[:name])
+          title = @info[:titles].first
+          @status.push 1, "Preparing to rip #{title[:filename]}..."
+
+          @rip_thread = Thread.new do
+            GLib::Timeout.add(30000) do
+              update_progress(title[:size_in_bytes], title[:filename])
+              @state != :ripped
+            end
+            Ripper.new.rip(Actions::TEMP_DIR, title[:id], Actions::MIN_LENGTH)
+            @drive.signal_emit('ripped', 0)
+          end
         end
       end
     end
 
     @searchbar = Gtk::HBox.new
     @term = Gtk::Entry.new
-    @search = Gtk::Button.new('Search IMDB')
+    @search = Gtk::Button.new('  Search IMDB  ')
     @search.signal_connect('clicked') do
       @matches.disable
       @matches.searching
@@ -59,60 +78,84 @@ class Gui
 
     @add_to_bar = Gtk::HBox.new
     @add_to_label = Gtk::Label.new('Will be Added to: ')
-    @add_to_label.set_alignment(0, 0)
+    @add_to_label.set_alignment(0, 0.5)
     @add_to = Gtk::Label.new
     @add_to.modify_font(Pango::FontDescription.new('monospace bold 12'))
-    @add_to.set_alignment(0, 0)
+    @add_to.set_alignment(0, 0.5)
+    @add = Gtk::Button.new('Add to Plex')
+    @add.sensitive = false
+    @add.signal_connect('clicked') { @library.add }
     @add_to_bar.pack_start(@add_to_label, false, true)
     @add_to_bar.pack_start(@add_to, true, true)
+    @add_to_bar.pack_start(@add, false, true)
 
     @quit = Gtk::Button.new('Quit')
     @quit.signal_connect('clicked') { Gtk.main_quit }
 
-    @hbox = Gtk::HBox.new
+    @progress = Gtk::ProgressBar.new
+
     @vbox = Gtk::VBox.new
-    @vbox.set_size_request(900, -1)
-    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @quit, @status].each do |control|
+    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @quit, @status, @progress].each do |control|
       @vbox.pack_start(control, false, true, 5)
     end
-    @hbox.pack_start(@vbox, false, true)
 
-    @window = Gtk::Window.new
-    @window.add(@hbox)
-    @window.signal_connect('delete_event') { false }
-    @window.signal_connect('destroy') do
+    add(@vbox)
+    signal_connect('delete_event') { false }
+    signal_connect('destroy') do
       quit
     end
-    @window.border_width = 10
-    @window.add_events(Gdk::Event::KEY_PRESS)
+    self.border_width = 10
+    add_events(Gdk::Event::KEY_PRESS)
 
-    @window.signal_connect('key-press-event') do |w, e|
+    signal_connect('key-press-event') do |w, e|
       key = Gdk::Keyval.to_name(e.keyval)
       quit if key == 'q' && e.state.control_mask?
     end
 
-    @window.show_all
+    signal_connect('ripped') do |filename|
+      @status.push 1, "Completed rip of #{filename}"
+      @state = :ripped
+      if @add_to.text != ''
+        @library.add
+      end
+    end
+
+    show_all
   end
 
   def quit
     @info_thread.kill if @info_thread
+    @rip_thread.kill if @rip_thread
     Gtk.main_quit
   end
 
   def start
     Gtk.main
-    @info_thread.join if @info_thread
   end
 
   private
+
+  def update_progress(total_size, filename)
+    path = File.join(Actions::TEMP_DIR, filename)
+
+    if @state == nil
+      if File.exist?(path)
+        @state = :ripping
+        @status.push 1, "Ripping #{filename}..."
+      end
+    elsif @state == :ripping
+      @progress.fraction = File.size(path) / total_size.to_f if File.exist?(path)
+    end
+  end
 
   def update_library_path
     @actions.set_library_path(@info, @owned.active?)
     @info[:name] = @title.text
     @info[:year] = @year.text
 
-    @library = Library.new(@info, @info[:titles].first)
+    @library = Library.new(@info, @info[:titles].first[:filename])
     @add_to.text = @library.movie_path
+    @add.sensitive = true if @state == :ripped
   end
 
   def clean_title(title)

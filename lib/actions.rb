@@ -7,22 +7,20 @@ class Actions
   end
 
   def disc_info
-      @info = YAML.load(File.read 'test/discinfo/BLADE_DVD.yml')
-#      info = {}
-#      output = Ripper.new.info(TEMP_DIR, MIN_LENGTH)
-#      if output.nil?
-#        info[:error] = "Problem reading disc. Check it's inserted correctly"
-#      else
-#        info = Disc.new.info(output)
-#
-#        if info[:id].nil?
-#          info[:error] = 'Could not get disc info. Check you can open the disc in makemkv.'
-#        else
-#          File.write('test/discinfo/' + info[:id] + '.txt', output)
-#        end
-#      end
-#      info
-#    end
+    info = {}
+    output = Ripper.new.info(TEMP_DIR, MIN_LENGTH)
+    if output.nil?
+      info[:error] = "Problem reading disc. Check it's inserted correctly"
+    else
+      info = Disc.new.info(output)
+
+      if info[:id].nil?
+        info[:error] = 'Could not get disc info. Check you can open the disc in makemkv.'
+      else
+        File.write('test/discinfo/' + info[:id] + '.txt', output)
+      end
+    end
+    info
   end
 
   def search(title, matches)
@@ -58,14 +56,5 @@ class Actions
     logger.info "Season #{info[:season]}"
     count = info[:titles].size
     logger.info "#{count} episode(s) #{MIN_LENGTH / 60} minutes or longer"
-  end
-
-  def rip_and_eject(logger, titles)
-    titles.each do |title|
-      logger.info "Ripping title #{title[:id]}..."
-      Ripper.new.rip(TEMP_DIR, title[:id], MIN_LENGTH)
-    end
-
-    `eject`
   end
 end

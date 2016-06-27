@@ -2,9 +2,9 @@ require 'fileutils'
 require './lib/immutable'
 
 class Library
-  def initialize(info, title)
+  def initialize(info, filename)
     @info = info
-    @title = title
+    @filename = filename
   end
 
   def add
@@ -14,7 +14,7 @@ class Library
       `sudo chown plex:plex "#{dir}"`
     end
 
-    tempfile = File.join(@info[:tempdir], @title[:filename])
+    tempfile = File.join(@info[:tempdir], @filename)
     `sudo chown plex:plex "#{tempfile}"`
     `sudo mv "#{tempfile}" "#{path}"`
 

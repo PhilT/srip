@@ -1,0 +1,13 @@
+#!/bin/env ruby
+
+require 'bundler'
+require 'fileutils'
+require 'yaml'
+
+Bundler.require
+
+Dir['./lib/*.rb'].each { |file| require file }
+
+main = MainWindow.new
+main.build
+main.start

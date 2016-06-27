@@ -34,7 +34,7 @@ class MainWindow < Gtk::Window
               @state != :ripped
             end
             Ripper.new.rip(Actions::TEMP_DIR, title[:id], Actions::MIN_LENGTH)
-            @drive.signal_emit('ripped', 0)
+            signal_emit('ripped', title[:filename])
           end
         end
       end

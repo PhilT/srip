@@ -14,7 +14,7 @@ class Library
       `sudo chown plex:plex "#{dir}"`
     end
 
-    tempfile = File.join(@info[:tempdir], @filename)
+    tempfile = File.join(Actions::TEMP_DIR, @filename)
     `sudo chown plex:plex "#{tempfile}"`
     `sudo mv "#{tempfile}" "#{path}"`
 

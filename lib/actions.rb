@@ -5,13 +5,17 @@ class Actions
   RENTED_PATH = 'media/Rented'
   MIN_LENGTH = 45
 
+  def initialize(ripperClass)
+    @ripper = ripperClass.new(TEMP_DIR, MIN_LENGTH)
+  end
+
   def clear_temp_folder
     `rm -f #{File.join(TEMP_DIR, '*.*')}`
   end
 
   def disc_info
     info = {}
-    output = Ripper.new.info(TEMP_DIR, MIN_LENGTH)
+    output = @ripper.info
     if output.nil?
       info[:error] = "Problem reading disc. Check it's inserted correctly"
     else
@@ -24,6 +28,10 @@ class Actions
       end
     end
     info
+  end
+
+  def rip_disc(id)
+    @ripper.rip(id)
   end
 
   def search(title, matches)

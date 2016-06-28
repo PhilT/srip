@@ -22,7 +22,7 @@ class MainWindow < Gtk::Window
   end
 
   def build
-    @actions = Actions.new
+    @actions = Actions.new(MockRipper.new)
     @owned = Gtk::RadioButton.new('I own this disc')
     @owned.signal_connect('toggled') { update_library_path }
     @rented = Gtk::RadioButton.new(@owned, 'I have rented this disc')
@@ -168,7 +168,7 @@ class MainWindow < Gtk::Window
     end
 
     @rip_thread = Thread.new do
-      Ripper.new.rip(Actions::TEMP_DIR, title[:id], Actions::MIN_LENGTH)
+      @actions.rip_disc(title[:id])
       signal_emit('ripped', title_num)
     end
   end

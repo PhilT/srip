@@ -1,20 +1,25 @@
 class Ripper
-  def info(tempdir, minlength)
-    call('info', tempdir, nil, minlength)
+  def initialize(tempdir, minlength)
+    @tempdir = tempdir
+    @minlength = minlength
   end
 
-  def rip(tempdir, id, minlength)
-    call('mkv', tempdir, id, minlength)
+  def info
+    call('info', nil)
+  end
+
+  def rip(id)
+    call('mkv', id)
   end
 
   private
 
-  def call(command, tempdir, id = nil, minlength = 1800)
-    dest = tempdir if command == 'mkv'
-    cmdline = "makemkvcon --robot --minlength=#{minlength} #{command} disc:0 #{id} #{dest}".strip
+  def call(command, id = nil)
+    dest = @tempdir if command == 'mkv'
+    cmdline = "makemkvcon --robot --minlength=#{@minlength} #{command} disc:0 #{id} #{dest}".strip
     output = cmdline + "\n" + `#{cmdline}`
 
-    File.open(File.join(tempdir, 'ripper.log'), 'a') do |f|
+    File.open(File.join(@tempdir, 'ripper.log'), 'a') do |f|
       f.puts output
     end
     output

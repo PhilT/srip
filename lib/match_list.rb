@@ -12,14 +12,18 @@ class MatchList < Gtk::ScrolledWindow
     self.add(@view)
   end
 
-  def searching
+  def clear
     @store.clear
+  end
+
+  def searching
+    clear
     item = 'Searching IMDB...'
     @store.set_value(@store.append, 0, item)
   end
 
   def list=(list)
-    @store.clear
+    clear
     list.each { |item| @store.set_value(@store.append, 0, item) }
   end
 
@@ -27,6 +31,10 @@ class MatchList < Gtk::ScrolledWindow
     @view.selection.signal_connect('changed') do
       yield @view.selection.selected
     end
+  end
+
+  def current
+    @view.selection.selected[0]
   end
 
   def disable

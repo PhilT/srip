@@ -1,5 +1,8 @@
 class Actions
+  #TODO: Create settings page
   TEMP_DIR = '/media/tmp'
+  OWNED_PATH = '/media/Owned'
+  RENTED_PATH = 'media/Rented'
   MIN_LENGTH = 45
 
   def clear_temp_folder
@@ -32,7 +35,7 @@ class Actions
     if info[:season]
       info[:library] = library_path(owned, 'Shows')
       log_season(logger, info)
-    else
+    elsif info[:titles]
       info[:titles] = [info[:titles].first]
       info[:library] = library_path(owned, 'Movies')
     end
@@ -40,9 +43,9 @@ class Actions
 
   def library_path(owned, type)
     if owned
-      File.join('/media/Owned', type)
+      File.join(OWNED_PATH, type)
     else
-      File.join('/media/Rented', type)
+      File.join(RENTED_PATH, type)
     end
   end
 

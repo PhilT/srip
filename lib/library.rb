@@ -2,27 +2,30 @@ require 'fileutils'
 require './lib/immutable'
 
 class Library
-  def initialize(info, filename)
+  def initialize(info)
     @info = info
-    @filename = filename
   end
 
-  def add
+  def add_all
     dir = File.dirname(path)
     unless Dir.exist?(dir)
       `sudo mkdir -p "#{dir}"`
       `sudo chown plex:plex "#{dir}"`
     end
 
-    tempfile = File.join(Actions::TEMP_DIR, @filename)
-    `sudo chown plex:plex "#{tempfile}"`
-    `sudo mv "#{tempfile}" "#{path}"`
+    warnings = []
+    @info[:titles].each do |title|
+      tempfile = File.join(Actions::TEMP_DIR, title[:filename])
+      `sudo chown plex:plex "#{tempfile}"`
+      `sudo mv "#{tempfile}" "#{path}"`
 
-    check_filesize
+      warnings << check_filesize
+    end
+    warnings.compact.first
   end
 
   def path
-    @path ||= @info[:season] ? episode_path : movie_path
+    @info[:season] ? episode_path : movie_path
   end
 
   def episode_path

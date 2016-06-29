@@ -155,8 +155,12 @@ class MainWindow < Gtk::Window
     show_all
   end
 
+  def all_ripped?
+    @info[:titles].all?{|title| title[:ripped] }
+  end
+
   def enable_add_to_library
-    if @title.text != '' && @year.text != ''
+    if @title.text != '' && @year.text != '' && all_ripped?
       @add.sensitive = true
     else
       @add.sensitive = false
@@ -166,7 +170,7 @@ class MainWindow < Gtk::Window
   def add_to_library
     warning = @library.add_all
     warning = "(#{warning})" if warning
-    reset "Added to library #{warning}"
+    reset "#{@info[@library.name]} added to library #{warning}"
   end
 
   def quit

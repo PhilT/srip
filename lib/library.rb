@@ -1,9 +1,9 @@
 require 'fileutils'
-require './lib/immutable'
 
 class Library
   def initialize(info)
     @info = info
+    @episodes = []
   end
 
   def add_all
@@ -28,16 +28,29 @@ class Library
     @info[:season] ? episode_path : movie_path
   end
 
+  def name
+    @info[:season] ? show_name : movie_name
+  end
+
   def episode_path
     season_dir = File.join(@info[:library], @info[:name], "Season #{@info[:season]}")
     files_in_season = Dir[File.join(season_dir, '/*.mkv')]
     episode = last_episode(files_in_season) + 1
-    name = "#{@info[:name]} - s#{@info[:season]}e#{'%02d' % episode}.mkv"
-    File.join(season_dir, name)
+    @episodes << episode
+    episode_name = "#{@info[:name]} - s#{@info[:season]}e#{'%02d' % episode}.mkv"
+    File.join(season_dir, episode_name)
   end
 
   def movie_path
-    File.join(@info[:library], "#{@info[:name]} (#{@info[:year]}).mkv")
+    File.join(@info[:library], "#{movie_name}.mkv")
+  end
+
+  def movie_name
+   "#{@info[:name]} (#{@info[:year]})"
+  end
+
+  def show_name
+    "#{@info[:name]} Season #{@info[:season]} Episodes #{@episodes.first} to #{@episodes.last}"
   end
 
   def last_episode(files)

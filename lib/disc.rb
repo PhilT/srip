@@ -60,8 +60,12 @@ class Disc
       show[:season] = name.scan(matcher).flatten.last.to_i
       show
     else
-      { id: name, name: titleize(name), type: 'MOVIE' }
+      { id: name, name: clean_title(name), type: 'MOVIE' }
     end
+  end
+
+  def clean_title(title)
+    titleize(title.gsub(/(dvd|bluray)/i, '').strip)
   end
 
   def info(data)

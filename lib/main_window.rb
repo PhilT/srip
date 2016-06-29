@@ -10,6 +10,9 @@ class MainWindow < Gtk::Window
   START_TEXT = 'Start Copying Disc'
   Thread::abort_on_exception = true
   type_register
+  signal_new('labelled', GLib::Signal::RUN_FIRST, nil, nil)
+  def signal_do_labelled
+  end
   signal_new('ripped', GLib::Signal::RUN_FIRST, nil, nil, Integer)
   def signal_do_ripped(title_num)
   end
@@ -20,6 +23,7 @@ class MainWindow < Gtk::Window
     @state = nil
     @start.sensitive = true
     @term.text = ''
+    @term.sensitive = false
     @title.text = ''
     @year.text = ''
     @disc.value = 0
@@ -40,15 +44,26 @@ class MainWindow < Gtk::Window
       @info = {}
       @start.sensitive = false
       @actions.clear_temp_folder
-      log 'Getting disc info...'
+      log 'Getting disc label...'
+      @label_thread = Thread.new do
+        @info = Disc.new.lookup_name(@actions.label)
+        @term.text = @info[:name]
+        log "Disc label: #{@info[:name]}"
+        @term.sensitive = true
+        signal_emit('labelled')
+      end
+    end
 
+    signal_connect('labelled') do
+      log 'Getting disc info...'
       @info_thread = Thread.new do
         @info = @actions.disc_info
+        log 'disc info retrieved'
         if @info[:error]
           reset(@info[:error])
         else
           @info = @actions.apply_rules(@info)
-          @term.text = clean_title(@info[:name])
+          log 'Rules applied'
           rip_title(0)
         end
       end
@@ -76,7 +91,6 @@ class MainWindow < Gtk::Window
       end
     end
     @log = Gtk::TextView.new
-    @log.set_size_request(-1, 200)
 
     @scroller = Gtk::ScrolledWindow.new
     @scroller.border_width = 5
@@ -102,7 +116,7 @@ class MainWindow < Gtk::Window
     @add_to_label = Gtk::Label.new('Will be Added to: ')
     @add_to_label.set_alignment(0, 0.5)
     @add_to = Gtk::Label.new
-    @add_to.modify_font(Pango::FontDescription.new('monospace bold 12'))
+    @add_to.modify_font(Pango::FontDescription.new('Ubuntu bold 10'))
     @add_to.set_alignment(0, 0.5)
     @add = Gtk::Button.new('Add to Library')
     @add.signal_connect('clicked') { add_to_library }
@@ -110,16 +124,22 @@ class MainWindow < Gtk::Window
     @add_to_bar.pack_start(@add_to, true, true)
     @add_to_bar.pack_start(@add, false, true)
 
+    @action_bar = Gtk::HBox.new
+    @cancel = Gtk::Button.new('Cancel')
+    @cancel.signal_connect('clicked') { cancel }
+    @action_bar.pack_start(@cancel, false, false)
+
+    @progress = Gtk::ProgressBar.new
+    @progress.set_size_request(-1, 20)
+
     @quit = Gtk::Button.new('Quit')
     @quit.signal_connect('clicked') { Gtk.main_quit }
 
-    @progress = Gtk::ProgressBar.new
-
     @vbox = Gtk::VBox.new
-    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @quit, @progress].each do |control|
-      @vbox.pack_start(control, false, true, 5)
+    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @action_bar, @progress, @scroller, @quit].each do |control|
+      fill = [MatchList, Gtk::ScrolledWindow].include?(control.class)
+      @vbox.pack_start(control, fill, true, 5)
     end
-    @vbox.pack_start(@scroller, true, true, 5)
 
     add(@vbox)
     signal_connect('delete_event') { false }
@@ -134,13 +154,12 @@ class MainWindow < Gtk::Window
       quit if key == 'q' && e.state.control_mask?
     end
 
-    @term.signal_connect('key-press-event') do |w, e|
-      @search.emit_event('clicked') if e.keyval == Gdk::Keyval::GDK_KP_Enter
+    @term.signal_connect('activate') do |w, e|
+      @search.signal_emit('clicked')
     end
 
     signal_connect('ripped') do |widget, title_num|
-      filename = @info[:titles][title_num][:filename]
-      log "#{count_message(title_num)} Completed rip of #{filename}"
+      log "Completed rip of #{count_message(title_num)}"
       @info[:titles][title_num][:ripped] = true
       title_num += 1
       if title_num < @info[:titles].size
@@ -164,8 +183,14 @@ class MainWindow < Gtk::Window
     show_all
   end
 
+  def cancel
+    [@label_thread, @info_thread, @rip_thread].each { |thread| thread && thread.kill }
+    @actions.cancel
+    reset('Cancelled operation')
+  end
+
   def all_ripped?
-    @info[:titles].all?{|title| title[:ripped] }
+    @info[:titles] && @info[:titles].all?{|title| title[:ripped] }
   end
 
   def enable_add_to_library
@@ -183,8 +208,7 @@ class MainWindow < Gtk::Window
   end
 
   def quit
-    @info_thread.kill if @info_thread
-    @rip_thread.kill if @rip_thread
+    cancel
     Gtk.main_quit
   end
 
@@ -199,12 +223,12 @@ class MainWindow < Gtk::Window
   end
 
   def count_message(n)
-    "Title #{n + 1} of #{@info[:titles].size}."
+    "title #{n + 1} of #{@info[:titles].size}."
   end
 
   def rip_title(title_num)
     title = @info[:titles][title_num]
-    log "#{count_message(title_num)} Preparing to rip #{title[:filename]}..."
+    log "Preparing to rip #{count_message(title_num)}..."
     GLib::Timeout.add(PROGRESS_TIMEOUT) do
       update_progress(title_num)
     end
@@ -220,6 +244,7 @@ class MainWindow < Gtk::Window
   end
 
   def update_progress(title_num)
+    return false unless @rip_thread.alive?
     filesize = title(title_num, :size_in_bytes).to_f
     filename = title(title_num, :filename)
     path = File.join(Actions::TEMP_DIR, filename)
@@ -227,7 +252,7 @@ class MainWindow < Gtk::Window
     if title(title_num, :ripped) == nil
       if File.exist?(path)
         @info[:titles][title_num][:ripped] = false
-        log "Ripping #{filename}..."
+        log "Ripping #{count_message(title_num)}..."
       end
     elsif title(title_num, :ripped) == false
       @progress.fraction = File.size(path) / filesize if File.exist?(path)
@@ -245,9 +270,5 @@ class MainWindow < Gtk::Window
 
     @library = Library.new(@info)
     @add_to.text = @library.path
-  end
-
-  def clean_title(title)
-    title.gsub(/(dvd|bluray)/i, '').strip
   end
 end

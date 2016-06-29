@@ -2,7 +2,6 @@ class MatchList < Gtk::ScrolledWindow
   def initialize
     super
     @view = Gtk::TreeView.new
-    @view.set_size_request(-1, 200)
     @view.headers_visible = false
     @view.append_column(Gtk::TreeViewColumn.new('Title', Gtk::CellRendererText.new, 'text' => 0))
     @store = Gtk::ListStore.new(String)

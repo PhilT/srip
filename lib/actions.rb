@@ -9,8 +9,16 @@ class Actions
     @ripper = ripper_class.new(TEMP_DIR, MIN_LENGTH)
   end
 
+  def cancel
+    @ripper.cancel
+  end
+
   def clear_temp_folder
     `rm -f #{File.join(TEMP_DIR, '*.*')}`
+  end
+
+  def label
+    @ripper.label
   end
 
   def disc_info
@@ -40,12 +48,7 @@ class Actions
   end
 
   def set_library_path(info, owned)
-    if info[:season]
-      info[:library] = library_path(owned, 'Shows')
-    elsif info[:titles]
-      info[:titles] = [info[:titles].first]
-      info[:library] = library_path(owned, 'Movies')
-    end
+    info[:library] = library_path(owned, info[:season] ? 'Shows' : 'Movies')
   end
 
   def library_path(owned, type)

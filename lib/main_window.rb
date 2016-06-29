@@ -22,6 +22,7 @@ class MainWindow < Gtk::Window
     @term.text = ''
     @title.text = ''
     @year.text = ''
+    @disc.value = 0
     @matches.clear
     @add_to.text = ''
     @add.sensitive = false

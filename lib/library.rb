@@ -46,7 +46,8 @@ class Library
   end
 
   def movie_name
-   "#{@info[:name]} (#{@info[:year]})"
+    disc = " - disc#{@info[:disc]}" if @info[:disc] != '0'
+   "#{@info[:name]} (#{@info[:year]})#{disc}"
   end
 
   def show_name

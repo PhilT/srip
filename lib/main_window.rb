@@ -87,12 +87,15 @@ class MainWindow < Gtk::Window
     @title = Gtk::Entry.new
     @year_label = Gtk::Label.new('Year:')
     @year = Gtk::Entry.new
+    @disc_label = Gtk::Label.new('Disc:')
+    @disc = Gtk::SpinButton.new(0.0, 10.0, 1.0)
     @titlebar.pack_start(@title_label, false, false)
     @titlebar.pack_start(@title, true, true)
     @titlebar.pack_start(@year_label, false, false)
     @titlebar.pack_start(@year, false, true)
-    @title.signal_connect('changed') { update_library_path }
-    @year.signal_connect('changed') { update_library_path }
+    @titlebar.pack_start(@disc_label, false, false)
+    @titlebar.pack_start(@disc, false, true)
+    [@title, @year, @disc].each {|control| control.signal_connect('changed') { update_library_path } }
 
     @add_to_bar = Gtk::HBox.new
     @add_to_label = Gtk::Label.new('Will be Added to: ')
@@ -112,9 +115,10 @@ class MainWindow < Gtk::Window
     @progress = Gtk::ProgressBar.new
 
     @vbox = Gtk::VBox.new
-    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @quit, @progress, @scroller].each do |control|
+    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @quit, @progress].each do |control|
       @vbox.pack_start(control, false, true, 5)
     end
+    @vbox.pack_start(@scroller, true, true, 5)
 
     add(@vbox)
     signal_connect('delete_event') { false }
@@ -127,6 +131,10 @@ class MainWindow < Gtk::Window
     signal_connect('key-press-event') do |w, e|
       key = Gdk::Keyval.to_name(e.keyval)
       quit if key == 'q' && e.state.control_mask?
+    end
+
+    @term.signal_connect('key-press-event') do |w, e|
+      @search.emit_event('clicked') if e.keyval == Gdk::Keyval::GDK_KP_Enter
     end
 
     signal_connect('ripped') do |widget, title_num|
@@ -232,6 +240,7 @@ class MainWindow < Gtk::Window
     @actions.set_library_path(@info, @owned.active?)
     @info[:name] = @title.text
     @info[:year] = @year.text
+    @info[:disc] = @disc.text
 
     @library = Library.new(@info)
     @add_to.text = @library.path

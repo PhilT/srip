@@ -86,9 +86,6 @@ class Disc
         add_title_field(info, code.to_i, id, row[3])
       end
     end
-    if info[:type] == 'MOVIE'
-      info[:titles] = [info[:titles].first]
-    end
     info
   end
 

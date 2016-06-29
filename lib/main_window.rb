@@ -1,3 +1,11 @@
+# settings for testing
+#RIPPER_CLASS = MockRipper
+#PROGRESS_TIMEOUT = 1000
+
+# settings for production
+RIPPER_CLASS = Ripper
+PROGRESS_TIMEOUT = 30000
+
 class MainWindow < Gtk::Window
   START_TEXT = 'Start Copying Disc'
   Thread::abort_on_exception = true
@@ -7,9 +15,8 @@ class MainWindow < Gtk::Window
   end
 
   def reset(message)
-    @status.push(1, message)
+    log message
 
-    @info = {}
     @state = nil
     @start.sensitive = true
     @term.text = ''
@@ -22,16 +29,17 @@ class MainWindow < Gtk::Window
   end
 
   def build
-    @actions = Actions.new(MockRipper.new)
+    @actions = Actions.new(RIPPER_CLASS)
     @owned = Gtk::RadioButton.new('I own this disc')
     @owned.signal_connect('toggled') { update_library_path }
     @rented = Gtk::RadioButton.new(@owned, 'I have rented this disc')
 
     @start = Gtk::Button.new(START_TEXT)
     @start.signal_connect('clicked') do
+      @info = {}
       @start.sensitive = false
       @actions.clear_temp_folder
-      @status.push(1, 'Getting disc info...')
+      log 'Getting disc info...'
 
       @info_thread = Thread.new do
         @info = @actions.disc_info
@@ -66,7 +74,13 @@ class MainWindow < Gtk::Window
       rescue
       end
     end
-    @status = Gtk::Statusbar.new
+    @log = Gtk::TextView.new
+    @log.set_size_request(-1, 200)
+
+    @scroller = Gtk::ScrolledWindow.new
+    @scroller.border_width = 5
+    @scroller.add(@log)
+    @scroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS)
 
     @titlebar = Gtk::HBox.new(false, 10)
     @title_label = Gtk::Label.new('Title:')
@@ -98,7 +112,7 @@ class MainWindow < Gtk::Window
     @progress = Gtk::ProgressBar.new
 
     @vbox = Gtk::VBox.new
-    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @quit, @status, @progress].each do |control|
+    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @quit, @progress, @scroller].each do |control|
       @vbox.pack_start(control, false, true, 5)
     end
 
@@ -117,31 +131,42 @@ class MainWindow < Gtk::Window
 
     signal_connect('ripped') do |widget, title_num|
       filename = @info[:titles][title_num][:filename]
-      @status.push 1, "#{count_message(title_num)} Completed rip of #{filename}"
+      log "#{count_message(title_num)} Completed rip of #{filename}"
+      @info[:titles][title_num][:ripped] = true
       title_num += 1
       if title_num < @info[:titles].size
         rip_title(title_num)
       else
-        @info[:titles][title_num][:ripped] = true
         if @title.text != '' && @year.text != ''
           add_to_library
         else
-          @status.push 1, "Set correct Title and Year and press 'Add to Library"
-          add.sensitive = true
+          log "Set correct Title and Year and press 'Add to Library"
+          enable_add_to_library
         end
         `eject`
       end
     end
+
+    @title.signal_connect('changed') { enable_add_to_library }
+    @year.signal_connect('changed') { enable_add_to_library }
 
     reset("Insert disc and press '#{START_TEXT}' to begin")
 
     show_all
   end
 
+  def enable_add_to_library
+    if @title.text != '' && @year.text != ''
+      @add.sensitive = true
+    else
+      @add.sensitive = false
+    end
+  end
+
   def add_to_library
     warning = @library.add_all
     warning = "(#{warning})" if warning
-    reset "#{@library.current} added to library #{warning}"
+    reset "Added to library #{warning}"
   end
 
   def quit
@@ -156,14 +181,18 @@ class MainWindow < Gtk::Window
 
   private
 
+  def log(message)
+    @log.buffer.text = message + "\n" + @log.buffer.text
+  end
+
   def count_message(n)
     "Title #{n + 1} of #{@info[:titles].size}."
   end
 
   def rip_title(title_num)
     title = @info[:titles][title_num]
-    @status.push 1, "#{count_message(title_num)} Preparing to rip #{title[:filename]}..."
-    GLib::Timeout.add(30000) do
+    log "#{count_message(title_num)} Preparing to rip #{title[:filename]}..."
+    GLib::Timeout.add(PROGRESS_TIMEOUT) do
       update_progress(title_num)
     end
 
@@ -185,10 +214,12 @@ class MainWindow < Gtk::Window
     if title(title_num, :ripped) == nil
       if File.exist?(path)
         @info[:titles][title_num][:ripped] = false
-        @status.push 1, "Ripping #{filename}..."
+        log "Ripping #{filename}..."
       end
     elsif title(title_num, :ripped) == false
       @progress.fraction = File.size(path) / filesize if File.exist?(path)
+    else
+      @progress.fraction = 1
     end
     !title(title_num, :ripped)
   end
@@ -198,9 +229,8 @@ class MainWindow < Gtk::Window
     @info[:name] = @title.text
     @info[:year] = @year.text
 
-    @library = Library.new(@info, @info[:titles].first[:filename])
+    @library = Library.new(@info)
     @add_to.text = @library.path
-    @add.sensitive = true if @state == :ripped
   end
 
   def clean_title(title)

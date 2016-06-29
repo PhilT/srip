@@ -3,10 +3,10 @@ class Actions
   TEMP_DIR = '/media/tmp'
   OWNED_PATH = '/media/Owned'
   RENTED_PATH = 'media/Rented'
-  MIN_LENGTH = 45
+  MIN_LENGTH = 2700
 
-  def initialize(ripperClass)
-    @ripper = ripperClass.new(TEMP_DIR, MIN_LENGTH)
+  def initialize(ripper_class)
+    @ripper = ripper_class.new(TEMP_DIR, MIN_LENGTH)
   end
 
   def clear_temp_folder
@@ -42,7 +42,6 @@ class Actions
   def set_library_path(info, owned)
     if info[:season]
       info[:library] = library_path(owned, 'Shows')
-      log_season(logger, info)
     elsif info[:titles]
       info[:titles] = [info[:titles].first]
       info[:library] = library_path(owned, 'Movies')
@@ -61,11 +60,5 @@ class Actions
     info = Rules.new.apply(info)
     File.write('test/discinfo/' + info[:id] + '.yml', info.to_yaml)
     info
-  end
-
-  def log_season(logger, info)
-    logger.info "Season #{info[:season]}"
-    count = info[:titles].size
-    logger.info "#{count} episode(s) #{MIN_LENGTH / 60} minutes or longer"
   end
 end

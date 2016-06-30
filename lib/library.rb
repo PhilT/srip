@@ -15,7 +15,7 @@ class Library
 
     warnings = []
     @info[:titles].each do |title|
-      tempfile = File.join(TEMP_DIR, title[:filename])
+      tempfile = File.join(SETTINGS.temp, title[:filename])
       `sudo chown plex:plex "#{tempfile}"`
       `sudo mv "#{tempfile}" "#{path}"`
 

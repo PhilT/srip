@@ -12,8 +12,13 @@ GEM
     ffi (1.9.10)
     gdk_pixbuf2 (3.0.8)
       glib2 (= 3.0.8)
+    gio2 (3.0.8)
+      glib2 (= 3.0.8)
+      gobject-introspection (= 3.0.8)
     glib2 (3.0.8)
       pkg-config
+    gobject-introspection (3.0.8)
+      glib2 (= 3.0.8)
     gtk2 (3.0.8)
       atk (= 3.0.8)
       gdk_pixbuf2 (= 3.0.8)
@@ -53,6 +58,7 @@ PLATFORMS
 
 DEPENDENCIES
   fakefs
+  gio2
   gtk2
   imdb
   listen

@@ -1,8 +1,7 @@
-TEMP_DIR = '/media/tmp'
-OWNED_PATH = '/media/Owned'
-LOG_PATH = '/media/log'
-RENTED_PATH = 'media/Rented'
-MIN_LENGTH = 2700
+require './lib/ripper'
+
+class Settings < Struct.new(:temp, :owned, :rented, :log, :min_length, :drive); end
+SETTINGS = Settings.new('/media/tmp', '/media/Owned', '/media/Rented', '/media/log', 2700, '/dev/sr0')
 
 # settings for testing
 #RIPPER_CLASS = MockRipper
@@ -17,11 +16,9 @@ class MainWindow < Gtk::Window
   Thread::abort_on_exception = true
   type_register
   signal_new('labelled', GLib::Signal::RUN_FIRST, nil, nil)
-  def signal_do_labelled
-  end
+  def signal_do_labelled; end
   signal_new('ripped', GLib::Signal::RUN_FIRST, nil, nil, Integer)
-  def signal_do_ripped(title_num)
-  end
+  def signal_do_ripped(title_num); end
 
   def reset(message)
     log message
@@ -40,44 +37,42 @@ class MainWindow < Gtk::Window
     @progress.fraction = 0
   end
 
-  def build
+  def start_rip
     @info = {}
-    @actions = Actions.new(RIPPER_CLASS)
-    @owned = Gtk::RadioButton.new('I own this disc')
-    @owned.signal_connect('toggled') { update_library_path }
-    @rented = Gtk::RadioButton.new(@owned, 'I have rented this disc')
-
-    @start = Gtk::Button.new(START_TEXT)
-    @start.signal_connect('clicked') do
-      @info = {}
-      @start.sensitive = false
-      @actions.clear_temp_folder
-      log 'Getting disc label...'
-      @label_thread = Thread.new do
-        @info = Disc.new.lookup_name(@actions.label)
+    @start.sensitive = false
+    @actions.clear_temp_folder
+    log 'Getting disc info...'
+    @info_thread = Thread.new do
+      @info = @actions.disc_info
+      log 'disc info retrieved'
+      if @info[:error]
+        reset(@info[:error])
+      else
+        @info = @actions.apply_rules(@info)
+        log 'Rules applied'
         @term.text = @info[:name]
-        log "Disc label: #{@info[:name]}"
         @term.sensitive = true
         @search.sensitive = true
-        signal_emit('labelled')
+        @library = Library.new(@info)
+        rip_title(0)
+      end
+    end
+  end
+
+  def build
+    @info = {}
+
+    Gio::VolumeMonitor.get.signal_connect('volume-added') do |_, vol|
+      if vol.get_identifier('unix-device') == SETTINGS.drive
+        log "Disc inserted: #{vol.name}"
+        start_rip
       end
     end
 
-    signal_connect('labelled') do
-      log 'Getting disc info...'
-      @info_thread = Thread.new do
-        @info = @actions.disc_info
-        log 'disc info retrieved'
-        if @info[:error]
-          reset(@info[:error])
-        else
-          @info = @actions.apply_rules(@info)
-          log 'Rules applied'
-          @library = Library.new(@info)
-          rip_title(0)
-        end
-      end
-    end
+    @actions = Actions.new(RIPPER_CLASS)
+
+    @start = Gtk::Button.new(START_TEXT)
+    @start.signal_connect('clicked') { start_rip }
 
     @searchbar = Gtk::HBox.new
     @term = Gtk::Entry.new
@@ -122,6 +117,13 @@ class MainWindow < Gtk::Window
     @titlebar.pack_start(@disc, false, true)
     [@title, @year, @disc].each {|control| control.signal_connect('changed') { update_library_path } }
 
+    @library_bar = Gtk::HBox.new(false, 10)
+    @owned = Gtk::RadioButton.new('I own this disc')
+    @owned.signal_connect('toggled') { update_library_path }
+    @rented = Gtk::RadioButton.new(@owned, 'I have rented this disc')
+    @library_bar.pack_start(@owned, false, false)
+    @library_bar.pack_start(@rented, false, false)
+
     @add_to_bar = Gtk::HBox.new
     @add_to_label = Gtk::Label.new('Will be Added to: ')
     @add_to_label.set_alignment(0, 0.5)
@@ -137,25 +139,25 @@ class MainWindow < Gtk::Window
     @action_bar = Gtk::HBox.new
     @cancel = Gtk::Button.new('Cancel')
     @cancel.signal_connect('clicked') { cancel }
+    @eject = Gtk::Button.new('eject')
+    @eject.signal_connect('clicked') { @actions.eject }
     @action_bar.pack_start(@cancel, false, false)
 
     @progress = Gtk::ProgressBar.new
     @progress.set_size_request(-1, 20)
 
     @quit = Gtk::Button.new('Quit')
-    @quit.signal_connect('clicked') { Gtk.main_quit }
+    @quit.signal_connect('clicked') { quit }
 
     @vbox = Gtk::VBox.new
-    [@owned, @rented, @start, @searchbar, @matches, @titlebar, @add_to_bar, @action_bar, @progress, @scroller, @quit].each do |control|
+    [@start, @searchbar, @matches, @titlebar, @library_bar, @add_to_bar, @action_bar, @progress, @scroller, @quit].each do |control|
       fill = [MatchList, Gtk::ScrolledWindow].include?(control.class)
       @vbox.pack_start(control, fill, true, 5)
     end
 
     add(@vbox)
     signal_connect('delete_event') { false }
-    signal_connect('destroy') do
-      quit
-    end
+    signal_connect('destroy') { quit }
     self.border_width = 10
     add_events(Gdk::Event::KEY_PRESS)
 
@@ -182,7 +184,7 @@ class MainWindow < Gtk::Window
           log "Set correct Title and Year and press 'Add to Library"
           enable_add_to_library
         end
-        `eject`
+        @actions.eject
       end
     end
 
@@ -195,9 +197,9 @@ class MainWindow < Gtk::Window
   end
 
   def cancel
-    [@label_thread, @info_thread, @rip_thread].each { |thread| thread && thread.kill }
+    [@info_thread, @rip_thread].each { |thread| thread && thread.kill }
     @actions.cancel
-    reset('Cancelled operation')
+    reset('Cancelled')
   end
 
   def all_ripped?
@@ -258,7 +260,7 @@ class MainWindow < Gtk::Window
     return false unless @rip_thread.alive?
     filesize = title(title_num, :size_in_bytes).to_f
     filename = title(title_num, :filename)
-    path = File.join(TEMP_DIR, filename)
+    path = File.join(SETTINGS.temp, filename)
 
     if title(title_num, :ripped) == nil
       if File.exist?(path)

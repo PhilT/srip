@@ -1,6 +1,7 @@
 source "https://rubygems.org"
 
 gem 'gtk2'
+gem 'gio2'
 gem 'imdb'
 
 group :development, :test do

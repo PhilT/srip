@@ -1,10 +1,4 @@
 class Actions
-  #TODO: Create settings page
-  TEMP_DIR = '/media/tmp'
-  OWNED_PATH = '/media/Owned'
-  RENTED_PATH = 'media/Rented'
-  MIN_LENGTH = 2700
-
   def initialize(ripper_class)
     @ripper = ripper_class.new(TEMP_DIR, MIN_LENGTH)
   end
@@ -31,8 +25,6 @@ class Actions
 
       if info[:id].nil?
         info[:error] = 'Could not get disc info. Check you can open the disc in makemkv.'
-      else
-        File.write('test/discinfo/' + info[:id] + '.txt', output)
       end
     end
     info
@@ -61,7 +53,7 @@ class Actions
 
   def apply_rules(info)
     info = Rules.new.apply(info)
-    File.write('test/discinfo/' + info[:id] + '.yml', info.to_yaml)
+    File.write(File.join(LOG_PATH, 'discinfo', "#{info[:id]}.yml"), info.to_yaml)
     info
   end
 end

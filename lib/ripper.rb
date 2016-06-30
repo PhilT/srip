@@ -23,34 +23,30 @@ class Ripper
   end
 
   def cancel
-    puts "Aborting #{@pid}"
     Process.kill('HUP', @pid) if @pid
     Process.wait(@pid)
-    puts "Aborted #{@pid}"
     @pid = nil
   end
 
   private
 
+  def write_log(output, type)
+    File.write(File.join(LOG_PATH, 'discinfo', "#{info[:id]}_#{type}.txt"), output)
+  end
+
   def makemkv(command, id = nil)
     dest = @tempdir if command == 'mkv'
     cmdline = "makemkvcon --robot --minlength=#{@minlength} #{command} disc:0 #{id} #{dest}".strip
     output = "#{cmdline}\n#{exec_command(cmdline)}"
-
-    File.open(File.join(@tempdir, 'ripper.log'), 'a') do |f|
-      f.puts output
-    end
+    write_log(output, command)
     output
   end
 
   def exec_command(cmdline)
-    puts "Executing #{cmdline}"
     io = IO.popen(cmdline)
     @pid = io.pid
-    puts "Waiting on #{@pid} from #{cmdline}"
     Process.wait(@pid)
     @pid = nil
-    puts "Finished #{cmdline}"
     io.read
   end
 end

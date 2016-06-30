@@ -1,3 +1,9 @@
+TEMP_DIR = '/media/tmp'
+OWNED_PATH = '/media/Owned'
+LOG_PATH = '/media/log'
+RENTED_PATH = 'media/Rented'
+MIN_LENGTH = 2700
+
 # settings for testing
 #RIPPER_CLASS = MockRipper
 #PROGRESS_TIMEOUT = 1000
@@ -24,6 +30,7 @@ class MainWindow < Gtk::Window
     @start.sensitive = true
     @term.text = ''
     @term.sensitive = false
+    @search.sensitive = false
     @title.text = ''
     @year.text = ''
     @disc.value = 0
@@ -50,6 +57,7 @@ class MainWindow < Gtk::Window
         @term.text = @info[:name]
         log "Disc label: #{@info[:name]}"
         @term.sensitive = true
+        @search.sensitive = true
         signal_emit('labelled')
       end
     end
@@ -247,7 +255,7 @@ class MainWindow < Gtk::Window
     return false unless @rip_thread.alive?
     filesize = title(title_num, :size_in_bytes).to_f
     filename = title(title_num, :filename)
-    path = File.join(Actions::TEMP_DIR, filename)
+    path = File.join(TEMP_DIR, filename)
 
     if title(title_num, :ripped) == nil
       if File.exist?(path)

@@ -5,6 +5,10 @@ class MockRipper
     @count = 0
   end
 
+  def label
+    'TEST_MOVIE'
+  end
+
   def info
     File.read('test/support/TEST_MOVIE.txt')
   end
@@ -18,5 +22,8 @@ class MockRipper
       sleep 2
     end
     @count += 1
+  end
+
+  def cancel
   end
 end

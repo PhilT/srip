@@ -23,7 +23,8 @@ class Ripper
   end
 
   def cancel
-    Process.kill('HUP', @pid) if @pid
+    return unless @pid
+    Process.kill('HUP', @pid)
     Process.wait(@pid)
     @pid = nil
   end

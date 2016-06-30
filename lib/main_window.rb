@@ -10,7 +10,7 @@ MIN_LENGTH = 2700
 
 # settings for production
 RIPPER_CLASS = Ripper
-PROGRESS_TIMEOUT = 30000
+PROGRESS_TIMEOUT = 5000
 
 class MainWindow < Gtk::Window
   START_TEXT = 'Start Copying Disc'
@@ -41,6 +41,7 @@ class MainWindow < Gtk::Window
   end
 
   def build
+    @info = {}
     @actions = Actions.new(RIPPER_CLASS)
     @owned = Gtk::RadioButton.new('I own this disc')
     @owned.signal_connect('toggled') { update_library_path }
@@ -72,6 +73,7 @@ class MainWindow < Gtk::Window
         else
           @info = @actions.apply_rules(@info)
           log 'Rules applied'
+          @library = Library.new(@info)
           rip_title(0)
         end
       end
@@ -173,6 +175,7 @@ class MainWindow < Gtk::Window
       if title_num < @info[:titles].size
         rip_title(title_num)
       else
+        update_library_path
         if @title.text != '' && @year.text != ''
           add_to_library
         else
@@ -263,7 +266,7 @@ class MainWindow < Gtk::Window
         log "Ripping #{count_message(title_num)}..."
       end
     elsif title(title_num, :ripped) == false
-      @progress.fraction = File.size(path) / filesize if File.exist?(path)
+      @progress.fraction = [File.size(path) / filesize, 1].min if File.exist?(path)
     else
       @progress.fraction = 1
     end
@@ -277,6 +280,6 @@ class MainWindow < Gtk::Window
     @info[:disc] = @disc.text
 
     @library = Library.new(@info)
-    @add_to.text = @library.path
+    @add_to.text = @library.path if @info[:name] != '' && @info[:year] != ''
   end
 end

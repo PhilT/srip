@@ -53,7 +53,7 @@ class Actions
 
   def apply_rules(info)
     info = Rules.new.apply(info)
-    File.write(File.join(LOG_PATH, 'discinfo', "#{info[:id]}.yml"), info.to_yaml)
+    File.write(File.join(LOG_PATH, "#{info[:id]}.yml"), info.to_yaml)
     info
   end
 end

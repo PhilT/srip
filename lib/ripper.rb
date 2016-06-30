@@ -5,13 +5,13 @@ class Ripper
   end
 
   def label
-    label = nil
+    @label = nil
     3.times do
-      label = exec_command('blkid /dev/sr0').match(/LABEL="(.*?)"/).to_a[1]
-      break if label
+      @label = exec_command('blkid /dev/sr0').match(/LABEL="(.*?)"/).to_a[1]
+      break if @label
       sleep 3
     end
-    label || ''
+    @label || ''
   end
 
   def info
@@ -32,7 +32,8 @@ class Ripper
   private
 
   def write_log(output, type)
-    File.write(File.join(LOG_PATH, 'discinfo', "#{info[:id]}_#{type}.txt"), output)
+    path = File.join(LOG_PATH, "#{@label}_#{type}.txt")
+    File.write(path, output)
   end
 
   def makemkv(command, id = nil)
@@ -44,10 +45,11 @@ class Ripper
   end
 
   def exec_command(cmdline)
-    io = IO.popen(cmdline)
-    @pid = io.pid
-    Process.wait(@pid)
+    data = IO.popen(cmdline) do |io|
+      @pid = io.pid
+      io.read
+    end
     @pid = nil
-    io.read
+    data
   end
 end

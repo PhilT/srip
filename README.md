@@ -2,17 +2,18 @@
 
 ## Description
 
-A collection of Bash and Ruby scripts to try to automate the process
-of ripping 3D, Bluray and DVD movies and TV shows and preparing it for Plex.
+Automatically rip movies and TV shows and add them to your Plex library.
 
 ### Rips Movies
 
-Rips first title that is 30 minutes or longer, removes non-english audio tracks
+Rips first title that is 45 minutes or longer, removes non-english audio tracks
 unless the main track (e.g. Chinese movies) or tracks that are mono or stereo
 when a multichannel track exists, selects 3D tracks and English subtitles
 
+Easily search IMDB to get the correct title and year of the movie.
+
 Renames the ripped title, moves it to appropriate folder and sets permissions
-for Plex
+for Plex.
 
 ### Rips TV Shows
 
@@ -34,19 +35,13 @@ as necessary.
 * [MakeMKV default selection options](ttp://www.makemkv.com/forum2/viewtopic.php?f=10&t=4386#p17399)
 * [MakeMKV Blu-Ray ripping examples](http://wiki.indie-it.com/wiki/Blu-Ray)
 
+Make sure the `libgnome` package is installed for auto disc detection.
+
 ## Usage
 
 To run:
 
-    ./rip [options]
+    ./srip
 
-Anything that is required will be asked on the commandline
-unless supplied as an option.
 
-To see all available options:
-
-    ./rip --help
-
-Example. To rip a movie without any questions just supply the year it was released:
-
-    ./rip --year=2016
+Tested on Arch Linux.

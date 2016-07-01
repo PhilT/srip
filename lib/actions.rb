@@ -32,9 +32,9 @@ class Actions
     info
   end
 
-  def rip_disc(id)
+  def rip_disc(id, title)
     output = @ripper.rip(id)
-    write_log(output, info[:id], 'rip')
+    write_log(output, title, 'rip')
   end
 
   def search(title, matches)
@@ -64,6 +64,6 @@ class Actions
 
   def write_log(output, name, type)
     path = File.join(SETTINGS.log, "#{name}_#{type}.txt")
-    File.write(path, output)
+    File.write(path, output + "\n", mode: 'a')
   end
 end

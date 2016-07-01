@@ -3,6 +3,17 @@ require './lib/ripper'
 class Settings < Struct.new(:temp, :owned, :rented, :log, :min_length, :drive); end
 SETTINGS = Settings.new('/media/tmp', '/media/Owned', '/media/Rented', '/media/log', 2700, '/dev/sr0')
 
+APP_NAME = 'sRIP'
+ADD_TO_LIBRARY = 'Add to Library'
+START_TEXT = 'Start Copying Disc'
+START_MESSAGE = "Welcome to #{APP_NAME}.
+
+Insert disc and wait a few seconds for it to be detected. If nothing happens press '#{START_TEXT}'.
+
+While the disc is copying you can Search IMDB for the correct title and year and optionally increment the disc number for multi-disc movies (start from 1 to activate this feature).
+
+You can also wait until the movie has finished copying before entering the details. Then just click #{ADD_TO_LIBRARY} to complete the process."
+
 # settings for testing
 #RIPPER_CLASS = MockRipper
 #PROGRESS_TIMEOUT = 1000
@@ -12,7 +23,6 @@ RIPPER_CLASS = Ripper
 PROGRESS_TIMEOUT = 5000
 
 class MainWindow < Gtk::Window
-  START_TEXT = 'Start Copying Disc'
   Thread::abort_on_exception = true
   type_register
   signal_new('labelled', GLib::Signal::RUN_FIRST, nil, nil)
@@ -23,6 +33,7 @@ class MainWindow < Gtk::Window
   def reset(message)
     log message
 
+    @title_in_tmp = false
     @state = nil
     @start.sensitive = true
     @term.text = ''
@@ -32,7 +43,7 @@ class MainWindow < Gtk::Window
     @year.text = ''
     @disc.value = 0
     @matches.clear
-    @add_to.text = ''
+    @add_to.text = '(none set)'
     @add.sensitive = false
     @progress.fraction = 0
   end
@@ -59,14 +70,23 @@ class MainWindow < Gtk::Window
     end
   end
 
+  def title_in_tmp?
+    @title_in_tmp
+  end
+
   def build
     @info = {}
 
-    Gio::VolumeMonitor.get.signal_connect('volume-added') do |_, vol|
-      if vol.get_identifier('unix-device') == SETTINGS.drive
-        log "Disc inserted: #{vol.name}"
-        start_rip
-      end
+    @drive_detector = DriveDetector.new(self, :start_rip)
+    monitor = Gio::VolumeMonitor.get
+    monitor.signal_connect('drive-changed') do |_, d|
+      @drive_detector.changing(d)
+    end
+    monitor.signal_connect('volume-added') do |_, v|
+      @drive_detector.added(v)
+    end
+    monitor.signal_connect('volume-removed') do |_, v|
+      @drive_detector.removed(v)
     end
 
     @actions = Actions.new(RIPPER_CLASS)
@@ -96,6 +116,9 @@ class MainWindow < Gtk::Window
       end
     end
     @log = Gtk::TextView.new
+    @log.editable = false
+    @log.buffer.create_tag("bold",   {"weight" => Pango::WEIGHT_BOLD})
+    @log.wrap_mode = Gtk::TextTag::WRAP_WORD
 
     @scroller = Gtk::ScrolledWindow.new
     @scroller.border_width = 5
@@ -128,20 +151,21 @@ class MainWindow < Gtk::Window
     @add_to_label = Gtk::Label.new('Will be Added to: ')
     @add_to_label.set_alignment(0, 0.5)
     @add_to = Gtk::Label.new
-    @add_to.modify_font(Pango::FontDescription.new('Ubuntu bold 10'))
+    @add_to.modify_font(Pango::FontDescription.new('bold'))
     @add_to.set_alignment(0, 0.5)
-    @add = Gtk::Button.new('Add to Library')
+    @add = Gtk::Button.new(ADD_TO_LIBRARY)
     @add.signal_connect('clicked') { add_to_library }
     @add_to_bar.pack_start(@add_to_label, false, true)
     @add_to_bar.pack_start(@add_to, true, true)
     @add_to_bar.pack_start(@add, false, true)
 
-    @action_bar = Gtk::HBox.new
+    @action_bar = Gtk::HBox.new(false, 10)
     @cancel = Gtk::Button.new('Cancel')
     @cancel.signal_connect('clicked') { cancel }
-    @eject = Gtk::Button.new('eject')
+    @eject = Gtk::Button.new('Eject')
     @eject.signal_connect('clicked') { @actions.eject }
     @action_bar.pack_start(@cancel, false, false)
+    @action_bar.pack_start(@eject, false, false)
 
     @progress = Gtk::ProgressBar.new
     @progress.set_size_request(-1, 20)
@@ -181,7 +205,9 @@ class MainWindow < Gtk::Window
         if @title.text != '' && @year.text != ''
           add_to_library
         else
-          log "Set correct Title and Year and press 'Add to Library"
+          log "Set correct Title and Year and press 'Add to Library", bold: true
+
+          @title_in_tmp = true
           enable_add_to_library
         end
         @actions.eject
@@ -191,7 +217,7 @@ class MainWindow < Gtk::Window
     @title.signal_connect('changed') { enable_add_to_library }
     @year.signal_connect('changed') { enable_add_to_library }
 
-    reset("Insert disc and press '#{START_TEXT}' to begin")
+    reset(START_MESSAGE)
 
     show_all
   end
@@ -229,11 +255,18 @@ class MainWindow < Gtk::Window
     Gtk.main
   end
 
-  private
-
-  def log(message)
-    @log.buffer.text = message + "\n" + @log.buffer.text
+  def log(message, options = {})
+    return unless message
+    text = message + "\n"
+    start = @log.buffer.start_iter
+    if options[:bold]
+      @log.buffer.insert(start, text, 'bold')
+    else
+      @log.buffer.insert(start, text) # Causes GTK tag unknown warning if supplying blank tag
+    end
   end
+
+  private
 
   def count_message(n)
     "title #{n + 1} of #{@info[:titles].size}."
@@ -247,7 +280,7 @@ class MainWindow < Gtk::Window
     end
 
     @rip_thread = Thread.new do
-      @actions.rip_disc(title[:id])
+      @actions.rip_disc(title[:id], @info[:id])
       signal_emit('ripped', title_num)
     end
   end

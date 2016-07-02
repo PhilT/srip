@@ -13,15 +13,18 @@ class Library
       `sudo chown plex:plex "#{dir}"`
     end
 
-    warnings = []
+    errors = []
     @info[:titles].each do |title|
       tempfile = File.join(SETTINGS.temp, title[:filename])
-      `sudo chown plex:plex "#{tempfile}"`
-      `sudo mv "#{tempfile}" "#{path}"`
-
-      warnings << check_filesize
+      if File.exist?(tempfile)
+        `sudo chown plex:plex "#{tempfile}"`
+        `sudo mv "#{tempfile}" "#{path}"`
+        errors << check_filesize
+      else
+        errors << "#{tempfile} not copied correctly. Check log for details"
+      end
     end
-    warnings.compact.first
+    errors
   end
 
   def path

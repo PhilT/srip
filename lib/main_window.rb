@@ -241,9 +241,13 @@ class MainWindow < Gtk::Window
   end
 
   def add_to_library
-    warning = @library.add_all
-    warning = "(#{warning})" if warning
-    reset "#{@library.name} added to library #{warning}"
+    errors = @library.add_all
+    if errors.any?
+      errors.each { |error| log error }
+      reset "Problem with #{@library.name}"
+    else
+      reset "#{@library.name} added to library"
+    end
   end
 
   def quit

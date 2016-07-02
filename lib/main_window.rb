@@ -205,7 +205,7 @@ class MainWindow < Gtk::Window
         if @title.text != '' && @year.text != ''
           add_to_library
         else
-          log "Set correct Title and Year and press 'Add to Library", bold: true
+          log "Please set the Title, Year and optionally Disc and click '#{ADD_TO_LIBRARY}'", bold: true
 
           @title_in_tmp = true
           enable_add_to_library

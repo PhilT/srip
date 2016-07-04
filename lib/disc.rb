@@ -52,22 +52,6 @@ class Disc
     }
   ]
 
-  def lookup_name(name)
-    show = TV_SHOWS.find { |s| /#{s[:id]}/ =~ name }
-    if show
-      show[:type] = 'TV'
-      matcher = show.delete(:season_matcher)
-      show[:season] = name.scan(matcher).flatten.last.to_i
-      show
-    else
-      { id: name, name: clean_title(name), type: 'MOVIE' }
-    end
-  end
-
-  def clean_title(title)
-    titleize(title.gsub(/(dvd|bluray)/i, '').strip)
-  end
-
   def info(data)
     info = {}
 
@@ -91,6 +75,24 @@ class Disc
       end
     end
     info
+  end
+
+  private
+
+  def lookup_name(name)
+    show = TV_SHOWS.find { |s| /#{s[:id]}/ =~ name }
+    if show
+      show[:type] = 'TV'
+      matcher = show.delete(:season_matcher)
+      show[:season] = name.scan(matcher).flatten.last.to_i
+      show
+    else
+      { id: name, name: clean_title(name), type: 'MOVIE' }
+    end
+  end
+
+  def clean_title(title)
+    titleize(title.gsub(/(dvd|bluray|disc 1| d4)/i, '').strip)
   end
 
   def add_disc_field(info, code)

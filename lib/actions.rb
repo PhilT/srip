@@ -1,6 +1,6 @@
 class Actions
-  def initialize(ripper_class)
-    @ripper = ripper_class.new(SETTINGS.temp, SETTINGS.min_length)
+  def initialize(ripper_class, logger)
+    @ripper = ripper_class.new(SETTINGS.temp, SETTINGS.min_length, logger)
   end
 
   def cancel

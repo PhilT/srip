@@ -1,7 +1,8 @@
 class Ripper
-  def initialize(tempdir, minlength)
+  def initialize(tempdir, minlength, logger)
     @tempdir = tempdir
     @minlength = minlength
+    @logger = logger
   end
 
   def info
@@ -28,9 +29,10 @@ class Ripper
   end
 
   def exec_command(cmdline)
-    data = IO.popen(cmdline) do |io|
+    data = ''
+    IO.popen(cmdline) do |io|
       @pid = io.pid
-      io.read
+      io.each_line {|line| data += line; @logger.info line }
     end
     @pid = nil
     data

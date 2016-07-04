@@ -1,5 +1,6 @@
 class DriveDetector
-  def initialize(logger, inserted_method)
+  def initialize(view, inserted_method, logger)
+    @view = view
     @logger = logger
     @inserted_method = inserted_method
     @inserted = false
@@ -10,7 +11,7 @@ class DriveDetector
   end
 
   def changing(drive)
-    return if @changing || @logger.title_in_tmp? || !target_drive?(drive)
+    return if @changing || @view.title_in_tmp? || !target_drive?(drive)
     @changing = true
     GLib::Timeout.add(2000) { changed }
   end
@@ -20,27 +21,27 @@ class DriveDetector
       @changing = false
       @inserted = !@inserted
       if @inserted
-        @logger.log 'Disc inserted'
-        @logger.send(@inserted_method)
+        @logger.info 'Disc inserted'
+        @view.send(@inserted_method)
       else
-        @logger.log 'Disc ejected'
+        @logger.info 'Disc ejected'
       end
     end
     false
   end
 
   def added(volume)
-    return if @logger.title_in_tmp? || !target_drive?(volume)
+    return if @view.title_in_tmp? || !target_drive?(volume)
     @changing = false
     @inserted = true
-    @logger.log 'Disc inserted'
-    @logger.send(@inserted_method)
+    @logger.info 'Disc inserted'
+    @view.send(@inserted_method)
   end
 
   def removed(volume)
     return unless target_drive?(volume)
     @changing = false
     @inserted = false
-    @logger.log 'Disc ejected'
+    @logger.info 'Disc ejected'
   end
 end

@@ -31,7 +31,7 @@ class MainWindow < Gtk::Window
   def signal_do_ripped(title_num); end
 
   def reset(message)
-    log message
+    @internal_log.info message
 
     @title_in_tmp = false
     @state = nil
@@ -52,15 +52,15 @@ class MainWindow < Gtk::Window
     @info = {}
     @start.sensitive = false
     @actions.clear_temp_folder
-    log 'Getting disc info...'
+    @internal_log.info 'Getting disc info (Sometimes this can take quite a while)...'
     @info_thread = Thread.new do
       @info = @actions.disc_info
-      log 'disc info retrieved'
+      @internal_log.info 'disc info retrieved'
       if @info[:error]
         reset(@info[:error])
       else
         @info = @actions.apply_rules(@info)
-        log 'Rules applied'
+        @internal_log.info 'Rules applied'
         @term.text = @info[:name]
         @term.sensitive = true
         @search.sensitive = true
@@ -76,20 +76,6 @@ class MainWindow < Gtk::Window
 
   def build
     @info = {}
-
-    @drive_detector = DriveDetector.new(self, :start_rip)
-    monitor = Gio::VolumeMonitor.get
-    monitor.signal_connect('drive-changed') do |_, d|
-      @drive_detector.changing(d)
-    end
-    monitor.signal_connect('volume-added') do |_, v|
-      @drive_detector.added(v)
-    end
-    monitor.signal_connect('volume-removed') do |_, v|
-      @drive_detector.removed(v)
-    end
-
-    @actions = Actions.new(RIPPER_CLASS)
 
     @start = Gtk::Button.new(START_TEXT)
     @start.signal_connect('clicked') { start_rip }
@@ -115,15 +101,12 @@ class MainWindow < Gtk::Window
       rescue
       end
     end
-    @log = Gtk::TextView.new
-    @log.editable = false
-    @log.buffer.create_tag("bold",   {"weight" => Pango::WEIGHT_BOLD})
-    @log.wrap_mode = Gtk::TextTag::WRAP_WORD
 
-    @scroller = Gtk::ScrolledWindow.new
-    @scroller.border_width = 5
-    @scroller.add(@log)
-    @scroller.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS)
+    @logbar = Gtk::HBox.new
+    @internal_log = LogView.new
+    @makemkv_log = LogView.new
+    @logbar.pack_start(@internal_log, true, true)
+    @logbar.pack_start(@makemkv_log, true, true)
 
     @titlebar = Gtk::HBox.new(false, 10)
     @title_label = Gtk::Label.new('Title:')
@@ -174,8 +157,8 @@ class MainWindow < Gtk::Window
     @quit.signal_connect('clicked') { quit }
 
     @vbox = Gtk::VBox.new
-    [@start, @searchbar, @matches, @titlebar, @library_bar, @add_to_bar, @action_bar, @progress, @scroller, @quit].each do |control|
-      fill = [MatchList, Gtk::ScrolledWindow].include?(control.class)
+    [@start, @searchbar, @matches, @titlebar, @library_bar, @add_to_bar, @action_bar, @progress, @logbar, @quit].each do |control|
+      fill = [@matches, @logbar].include?(control)
       @vbox.pack_start(control, fill, true, 5)
     end
 
@@ -195,7 +178,7 @@ class MainWindow < Gtk::Window
     end
 
     signal_connect('ripped') do |widget, title_num|
-      log "Completed rip of #{count_message(title_num)}"
+      @internal_log.info "Completed rip of #{count_message(title_num)}"
       @info[:titles][title_num][:ripped] = true
       title_num += 1
       if title_num < @info[:titles].size
@@ -205,7 +188,7 @@ class MainWindow < Gtk::Window
         if @title.text != '' && @year.text != ''
           add_to_library
         else
-          log "Please set the Title, Year and optionally Disc and click '#{ADD_TO_LIBRARY}'", bold: true
+          @internal_log.info "Please set the Title, Year and optionally Disc and click '#{ADD_TO_LIBRARY}'", bold: true
 
           @title_in_tmp = true
           enable_add_to_library
@@ -216,6 +199,19 @@ class MainWindow < Gtk::Window
 
     @title.signal_connect('changed') { enable_add_to_library }
     @year.signal_connect('changed') { enable_add_to_library }
+
+    @actions = Actions.new(RIPPER_CLASS, @makemkv_log)
+    @drive_detector = DriveDetector.new(self, :start_rip, @internal_log)
+    monitor = Gio::VolumeMonitor.get
+    monitor.signal_connect('drive-changed') do |_, d|
+      @drive_detector.changing(d)
+    end
+    monitor.signal_connect('volume-added') do |_, v|
+      @drive_detector.added(v)
+    end
+    monitor.signal_connect('volume-removed') do |_, v|
+      @drive_detector.removed(v)
+    end
 
     reset(START_MESSAGE)
 
@@ -243,7 +239,7 @@ class MainWindow < Gtk::Window
   def add_to_library
     errors = @library.add_all
     if errors.any?
-      errors.each { |error| log error }
+      errors.each { |error| @internal_log.info error }
       reset "Problem with #{@library.name}"
     else
       reset "#{@library.name} added to library"
@@ -259,17 +255,6 @@ class MainWindow < Gtk::Window
     Gtk.main
   end
 
-  def log(message, options = {})
-    return unless message
-    text = message + "\n"
-    start = @log.buffer.start_iter
-    if options[:bold]
-      @log.buffer.insert(start, text, 'bold')
-    else
-      @log.buffer.insert(start, text) # Causes GTK tag unknown warning if supplying blank tag
-    end
-  end
-
   private
 
   def count_message(n)
@@ -278,7 +263,7 @@ class MainWindow < Gtk::Window
 
   def rip_title(title_num)
     title = @info[:titles][title_num]
-    log "Preparing to rip #{count_message(title_num)}..."
+    @internal_log.info "Preparing to rip #{count_message(title_num)}..."
     GLib::Timeout.add(PROGRESS_TIMEOUT) do
       update_progress(title_num)
     end
@@ -302,7 +287,7 @@ class MainWindow < Gtk::Window
     if title(title_num, :ripped) == nil
       if File.exist?(path)
         @info[:titles][title_num][:ripped] = false
-        log "Ripping #{count_message(title_num)}..."
+        @internal_log.info "Ripping #{count_message(title_num)}..."
       end
     elsif title(title_num, :ripped) == false
       @progress.fraction = [File.size(path) / filesize, 1].min if File.exist?(path)

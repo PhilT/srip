@@ -92,7 +92,7 @@ class Disc
   end
 
   def clean_title(title)
-    titleize(title.gsub(/(dvd|bluray|disc 1| d4)/i, '').strip)
+    titleize(title.gsub(/(dvd|bluray|disc 1| d4)/i, '').strip.gsub(/^_/, ''))
   end
 
   def add_disc_field(info, code)

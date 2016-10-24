@@ -1,0 +1,6 @@
+temp: /media/tmp
+owned: /media/Owned
+rented: /media/Rented
+log: /media/log
+min_length: 2700
+drive: /dev/sr0

@@ -1,6 +1,6 @@
 class Actions
   def initialize(ripper_class, logger)
-    @ripper = ripper_class.new(SETTINGS.temp, SETTINGS.min_length, logger)
+    @ripper = ripper_class.new(SETTINGS['temp'], SETTINGS['min_length'], logger)
   end
 
   def cancel
@@ -12,7 +12,7 @@ class Actions
   end
 
   def clear_temp_folder
-    `rm -f #{File.join(SETTINGS.temp, '*.*')}`
+    `rm -f #{File.join(SETTINGS['temp'], '*.*')}`
   end
 
   def disc_info
@@ -48,22 +48,22 @@ class Actions
 
   def library_path(owned, type)
     if owned
-      File.join(SETTINGS.owned, type)
+      File.join(SETTINGS['owned'], type)
     else
-      File.join(SETTINGS.rented, type)
+      File.join(SETTINGS['rented'], type)
     end
   end
 
   def apply_rules(info)
     info = Rules.new.apply(info)
-    File.write(File.join(SETTINGS.log, "#{info[:id]}.yml"), info.to_yaml)
+    File.write(File.join(SETTINGS['log'], "#{info[:id]}.yml"), info.to_yaml)
     info
   end
 
   private
 
   def write_log(output, name, type)
-    path = File.join(SETTINGS.log, "#{name}_#{type}.txt")
+    path = File.join(SETTINGS['log'], "#{name}_#{type}.txt")
     File.write(path, output + "\n", mode: 'a')
   end
 end

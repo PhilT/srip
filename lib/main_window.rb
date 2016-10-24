@@ -1,7 +1,11 @@
 require './lib/ripper'
 
-class Settings < Struct.new(:temp, :owned, :rented, :log, :min_length, :drive); end
-SETTINGS = Settings.new('/media/tmp', '/media/Owned', '/media/Rented', '/media/log', 2700, '/dev/sr0')
+begin
+  SETTINGS = YAML.load(File.open('settings.yml'))
+rescue Errno::ENOENT
+  puts "Copy settings.example.yml to settings.yml and adjust for your environment"
+  exit 1
+end
 
 APP_NAME = 'sRIP'
 ADD_TO_LIBRARY = 'Add to Library'
@@ -282,7 +286,7 @@ class MainWindow < Gtk::Window
     return false unless @rip_thread.alive?
     filesize = title(title_num, :size_in_bytes).to_f
     filename = title(title_num, :filename)
-    path = File.join(SETTINGS.temp, filename)
+    path = File.join(SETTINGS['temp'], filename)
 
     if title(title_num, :ripped) == nil
       if File.exist?(path)

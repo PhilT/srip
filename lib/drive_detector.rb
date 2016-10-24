@@ -7,7 +7,7 @@ class DriveDetector
   end
 
   def target_drive?(drive)
-    drive.get_identifier('unix-device') == SETTINGS.drive
+    drive.get_identifier('unix-device') == SETTINGS['drive']
   end
 
   def changing(drive)

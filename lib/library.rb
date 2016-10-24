@@ -15,7 +15,7 @@ class Library
 
     errors = []
     @info[:titles].each do |title|
-      tempfile = File.join(SETTINGS.temp, title[:filename])
+      tempfile = File.join(SETTINGS['temp'], title[:filename])
       if File.exist?(tempfile)
         `sudo chown plex:plex "#{tempfile}"`
         `sudo mv "#{tempfile}" "#{path}"`

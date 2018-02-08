@@ -101,7 +101,9 @@ class MainWindow < Gtk::Window
     @matches = MatchList.new
     @matches.selected do |item|
       begin
-        @title.text, @year.text = item[0].split(/\(|\)/).map(&:strip)
+        title = item[0].split(/\(|\)/).map(&:strip)
+        @title.text = title.first
+        @year.text = title.last
       rescue
       end
     end
